@@ -14,8 +14,6 @@
 **Nama aplikasi.** HoaxScan
 *Sistem Pendeteksi Berita Hoax Berbasis Kecerdasan Buatan Hybrid dengan Analisis Multimodal Teks, Gambar, dan Video*
 
-**Status proyek.** HoaxScan masih tahap rancangan, jadi semua uraian di laporan ini menyatakan apa yang dirancang.
-
 **Deskripsi dan tujuan.** HoaxScan dirancang menerima satu link berita, lalu melakukan scraping terhadap teks artikel, gambar, dan video di halaman itu. Penilaiannya berjalan dalam dua tahap. IndoBERT membaca teks secara lokal tanpa biaya per request, sedangkan Gemini dipanggil ketika halaman memuat gambar atau video, atau ketika IndoBERT ragu terhadap teksnya. Gemini menilai gambar dan videonya, lalu membandingkan klaim dengan rujukan fact-check hasil RAG retrieval. Outputnya berupa label (Hoax, Fakta, atau Tidak Pasti), confidence score, penjelasan berbahasa Indonesia, dan daftar sumber rujukan yang bisa diklik.
 
 **Masalah yang diselesaikan.** Satu link berita bisa membawa klaim tertulis, foto dari peristiwa lain, dan video yang sudah dipotong konteksnya sekaligus. Alat yang hanya membaca teks tidak akan menangkap manipulasi di gambar dan video. Masalah keduanya, label saja tidak cukup bagi pengguna awam karena mereka tidak punya bahan untuk menilai ulang. HoaxScan dirancang selalu menyertakan alasan beserta sumbernya, termasuk mengakui ketika rujukannya belum memadai.
