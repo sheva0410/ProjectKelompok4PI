@@ -7,6 +7,7 @@ try:
     a = extract_article(url)
     print("JUDUL:", a.title)
     print("PANJANG TEKS:", len(a.text))
-    print("CUPLIKAN:", a.text[:300])
+    print("TOP IMAGE:", a.top_image)
+    print("VIDEO:", a.video_urls)
 except ScrapeError as e:
     print("GAGAL:", e)

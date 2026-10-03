@@ -1,10 +1,11 @@
 import ipaddress
 import socket
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 import requests
 import trafilatura
+from app.services.media import find_media
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; HoaxScanBot/1.0)"}
 TIMEOUT = 10
@@ -20,6 +21,8 @@ class ScrapeError(Exception):
 class Article:
     title: str | None
     text: str
+    top_image: str | None = None
+    video_urls: list[str] = field(default_factory=list)
 
 
 def _check_url(url: str) -> None:
@@ -36,7 +39,7 @@ def _check_url(url: str) -> None:
             raise ScrapeError("Alamat URL tidak diizinkan")
 
 
-def fetch_html(url: str) -> str:
+def fetch_html(url: str) -> tuple[str, str]:
     _check_url(url)
     try:
         resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
@@ -54,11 +57,11 @@ def fetch_html(url: str) -> str:
 
     if not resp.encoding or resp.encoding.lower() == "iso-8859-1":
         resp.encoding = resp.apparent_encoding
-    return resp.text
+    return resp.text, resp.url
 
 
 def extract_article(url: str) -> Article:
-    html = fetch_html(url)
+    html, final_url = fetch_html(url)
     text = trafilatura.extract(html, include_comments=False, include_tables=False)
     if not text or len(text) < MIN_TEXT_LEN:
         raise ScrapeError(
@@ -66,4 +69,7 @@ def extract_article(url: str) -> Article:
         )
     meta = trafilatura.extract_metadata(html)
     title = meta.title if meta and meta.title else None
-    return Article(title=title, text=text)
+    top_image, video_urls = find_media(html, final_url)
+    return Article(
+        title=title, text=text, top_image=top_image, video_urls=video_urls
+    )
