@@ -1,7 +1,5 @@
-import { api } from "../api.js";
+import { submitUrl } from "../api.js";
 import { navigate } from "../router.js";
-
-const ENDPOINT = "/submissions";
 
 export function renderScan(root) {
   root.innerHTML = `
@@ -40,7 +38,7 @@ export function renderScan(root) {
 
     try {
       const url = form.elements.url.value.trim();
-      const result = await api.post(ENDPOINT, { url });
+      const result = await submitUrl(url);
       sessionStorage.setItem("hoaxscan_last_result", JSON.stringify(result));
       navigate("/result");
     } catch (err) {

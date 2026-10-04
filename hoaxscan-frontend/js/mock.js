@@ -13,7 +13,7 @@ const TRUSTED_DOMAINS = [
   "antaranews.com", "cnnindonesia.com", "katadata.co.id",
 ];
 
-// Meniru respons pemeriksaan link saat frontend berjalan dalam mode demo.
+// Meniru hasil pemeriksaan link dalam bentuk yang sama dengan toUiResult() di api.js.
 export function mockAnalyzeLink(url) {
   const lower = (url || "").toLowerCase();
   const isTrusted = TRUSTED_DOMAINS.some((d) => lower.includes(d));
@@ -24,16 +24,26 @@ export function mockAnalyzeLink(url) {
     ? "Domain sumber tidak terdaftar sebagai media terverifikasi, dan pola URL menyerupai situs yang pernah menyebarkan klaim tidak berdasar."
     : "Domain sumber terdaftar sebagai media yang umumnya melakukan verifikasi fakta sebelum publikasi.";
 
-  return { media_type: "link", is_hoax, confidence_score: score, explanation };
+  return {
+    media_type: "link",
+    state: "done",
+    is_hoax,
+    verdict: is_hoax ? "Terindikasi hoax" : "Cenderung kredibel",
+    confidence_score: score,
+    explanation,
+    references: [],
+  };
 }
 
-// "Database" riwayat scan contoh, disimpan di localStorage browser.
+// "Database" riwayat contoh, disimpan di localStorage browser.
 const HISTORY_KEY = "hoaxscan_mock_history";
 
 export function mockSaveHistory(result) {
   const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-  history.unshift({ ...result, created_at: new Date().toISOString() });
+  const saved = { ...result, id: Date.now(), created_at: new Date().toISOString() };
+  history.unshift(saved);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
+  return saved;
 }
 
 export function mockGetHistory() {

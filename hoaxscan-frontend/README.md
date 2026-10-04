@@ -30,25 +30,28 @@ hoaxscan-frontend/
 
 Buka `js/config.js`:
 
-- **`MOCK_MODE = true`** (kondisi saat ini, task FE-01): frontend jalan sendiri
-  dengan data contoh dari `js/mock.js`. Hasil scan dibuat dari daftar domain
-  tepercaya sederhana, riwayat disimpan di `localStorage`. Tidak butuh backend.
-- **`MOCK_MODE = false`** (task FE-02): request dikirim ke `API_BASE_URL`
-  lewat `api.js`.
+- **`MOCK_MODE = false`** (kondisi saat ini, FE-02): request dikirim ke
+  `API_BASE_URL` (backend FastAPI, default `http://127.0.0.1:8000/api`).
+- **`MOCK_MODE = true`** (FE-01): frontend jalan sendiri dengan data contoh
+  dari `js/mock.js` dan riwayat di `localStorage`. Berguna untuk demo tanpa backend.
 
-Bentuk data sengaja sama antara mode mock dan mode asli
-(`{ is_hoax, confidence_score, explanation, ... }`), jadi pindah ke FE-02 tidak
-perlu menulis ulang halaman.
+Halaman tidak memanggil `fetch()` langsung. Semuanya lewat tiga fungsi di
+`api.js` (`submitUrl`, `getSubmission`, `listSubmissions`) yang mengubah respons
+backend menjadi satu bentuk data untuk UI (`toUiResult`), sama untuk kedua mode.
 
 ## Endpoint yang dipakai
 
-| Method | Endpoint          | Keterangan                                   |
-|--------|-------------------|-----------------------------------------------|
-| POST   | `/submissions`    | Kirim `{ url }`, balikan hasil analisis       |
-| GET    | `/scan/history/`  | Riwayat pemeriksaan (juga dipakai halaman Tren) |
+| Method | Endpoint                | Dipakai oleh                     |
+|--------|-------------------------|----------------------------------|
+| POST   | `/api/submissions`      | halaman Scan (kirim `{ url }`)   |
+| GET    | `/api/submissions/{id}` | halaman Hasil (cek status ulang) |
+| GET    | `/api/submissions`      | halaman Riwayat dan Tren         |
 
-Sesuaikan path dan nama field dengan backend tim. Kalau nama field respons
-berbeda, ubah di `pages/result.js` dan `pages/history.js`.
+Pemetaan hasil backend ke UI: `label` `hoax` / `fakta` / `tidak_pasti` menjadi
+"Terindikasi hoax" / "Cenderung kredibel" / "Tidak pasti"; `confidence` jadi
+persen; `sources` jadi daftar rujukan. Submission tanpa `result` ditampilkan
+sebagai "Belum dianalisis", dan halaman Hasil mengeceknya ulang tiap 3 detik
+(maks. 10 kali).
 
 ## Menjalankan secara lokal
 
@@ -59,5 +62,6 @@ cd hoaxscan-frontend
 python -m http.server 5500
 ```
 
-lalu buka `http://localhost:5500`. Saat `MOCK_MODE = false`, pastikan backend
-mengaktifkan CORS untuk alamat frontend.
+lalu buka `http://localhost:5500`. Saat `MOCK_MODE = false`, tambahkan
+`http://localhost:5500` ke `CORS_ORIGINS` di `.env` backend (bawaannya hanya
+`http://localhost:5173`).

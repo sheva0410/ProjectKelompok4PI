@@ -1,4 +1,4 @@
-import { api } from "../api.js";
+import { listSubmissions } from "../api.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -41,7 +41,7 @@ export function renderTrends(root) {
 
 async function loadTrends(listEl) {
   try {
-    const history = await api.get("/scan/history/");
+    const history = await listSubmissions();
     const grouped = new Map();
 
     for (const item of history) {
