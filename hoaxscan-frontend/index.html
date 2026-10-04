@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Periksa berita online dengan HoaxScan. Tempel link artikel untuk melihat analisis, skor keyakinan, dan rujukan.">
+  <title>HoaxScan - Periksa Berita</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar" aria-label="Navigasi utama">
+    <a href="#/" class="logo"><span class="logo-mark" aria-hidden="true">H</span>HoaxScan</a>
+    <div class="nav-links" id="nav-links">
+      <a href="#/">Home</a>
+      <a href="#/scan">Periksa link</a>
+      <a href="#/trends">Tren</a>
+      <a href="#/history">Riwayat</a>
+    </div>
+    <div class="nav-right">
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Buka menu" aria-controls="nav-links" aria-expanded="false">Menu</button>
+    </div>
+  </nav>
+  <main id="app" class="container"></main>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    document.getElementById("nav-toggle").addEventListener("click", () => {
+      const links = document.getElementById("nav-links");
+      const toggle = document.getElementById("nav-toggle");
+      const isOpen = links.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Tutup menu" : "Buka menu");
+    });
+  </script>
+</body>
+</html>
