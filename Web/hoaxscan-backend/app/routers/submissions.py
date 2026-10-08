@@ -6,17 +6,24 @@ from app.database import get_db
 from app.models import Submission
 from app.schemas import SubmissionCreate, SubmissionOut
 from app.services.url_utils import hash_url, normalize_url
+from app.services.scraper import ScrapeError, extract_article
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 
 @router.post("", response_model=SubmissionOut, status_code=201)
 def create_submission(payload: SubmissionCreate, db: Session = Depends(get_db)):
+    try:
+        article = extract_article(payload.url)
+    except ScrapeError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
     normalized = normalize_url(payload.url)
     sub = Submission(
         url=payload.url,
         normalized_url=normalized,
         url_hash=hash_url(normalized),
+        title=article.title,
     )
     db.add(sub)
     db.commit()
