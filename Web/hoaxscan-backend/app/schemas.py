@@ -30,6 +30,7 @@ class AnalysisResultOut(BaseModel):
     confidence: float
     explanation: str
     sources: list
+    modalitas_dinilai: list[str]
     created_at: datetime
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text, func, text
 from app.database import Base
 
 
@@ -37,6 +37,9 @@ class AnalysisResult(Base):
     confidence: Mapped[float] = mapped_column(Float)
     explanation: Mapped[str] = mapped_column(Text)
     sources: Mapped[list] = mapped_column(JSONB, default=list)
+    modalitas_dinilai: Mapped[list] = mapped_column(
+    JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
