@@ -62,12 +62,18 @@ def fetch_html(url: str) -> tuple[str, str]:
 
 def extract_article(url: str) -> Article:
     html, final_url = fetch_html(url)
-    text = trafilatura.extract(html, include_comments=False, include_tables=False)
+    try:
+        text = trafilatura.extract(
+            html, include_comments=False, include_tables=False
+        )
+        meta = trafilatura.extract_metadata(html)
+    except Exception:
+        raise ScrapeError("Gagal membaca isi halaman")
+
     if not text or len(text) < MIN_TEXT_LEN:
         raise ScrapeError(
             "Isi artikel tidak ditemukan (halaman kosong, terkunci, atau butuh login)"
         )
-    meta = trafilatura.extract_metadata(html)
     title = meta.title if meta and meta.title else None
     top_image, video_urls = find_media(html, final_url)
     return Article(
