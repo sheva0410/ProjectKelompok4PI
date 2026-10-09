@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     jwt_secret: str = ""
     gemini_api_key: str = ""
+    stub_delay_seconds: int = 0
 
 
 settings = Settings()

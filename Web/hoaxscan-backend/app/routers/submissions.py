@@ -1,18 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
-
+from app.services.jobs import run_analysis
 from app.database import get_db
 from app.models import Submission
 from app.schemas import SubmissionCreate, SubmissionOut
 from app.services.url_utils import hash_url, normalize_url
 from app.services.scraper import ScrapeError, extract_article
 
+
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 
 @router.post("", response_model=SubmissionOut, status_code=201)
-def create_submission(payload: SubmissionCreate, db: Session = Depends(get_db)):
+def create_submission(
+    payload: SubmissionCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     try:
         article = extract_article(payload.url)
     except ScrapeError as e:
@@ -28,6 +33,10 @@ def create_submission(payload: SubmissionCreate, db: Session = Depends(get_db)):
     db.add(sub)
     db.commit()
     db.refresh(sub)
+
+    # Analisis berjalan di latar belakang. Respons langsung kembali dengan status
+    # pending, lalu frontend memantau lewat GET /api/submissions/{id}.
+    background_tasks.add_task(run_analysis, sub.id, article)
     return sub
 
 
