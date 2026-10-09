@@ -32,6 +32,9 @@ export function mockAnalyzeLink(url) {
     confidence_score: score,
     explanation,
     references: [],
+    // Mode demo: hanya teks yang dinilai, artikel contoh memuat gambar dan video.
+    modalitas_dinilai: ["teks"],
+    media_found: ["gambar", "video"],
   };
 }
 

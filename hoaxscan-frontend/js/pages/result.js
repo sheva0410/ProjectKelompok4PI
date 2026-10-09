@@ -1,4 +1,5 @@
 import { getSubmission } from "../api.js";
+import { renderModalitasBadges } from "../modalitas.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -108,6 +109,7 @@ function drawResult(root, result, tries = 0) {
         <div class="ring-inner"><b>${pct}%</b><small>keyakinan</small></div>
       </div>
       <div class="result-tag">${escapeHtml(status)}</div>
+      ${renderModalitasBadges(result)}
       <p class="explanation">${escapeHtml(explanation || "Belum ada penjelasan tambahan dari sistem.")}</p>
       <p class="result-limit" role="note"><strong>Gunakan sebagai petunjuk awal.</strong> Skor dan label otomatis bukan kepastian bahwa berita benar atau hoaks. Baca rujukan jika tersedia dan bandingkan dengan sumber tepercaya lain.</p>
       ${referenceMarkup ? `<div class="source-list"><h3>Rujukan terkait</h3>${referenceMarkup}</div>` : ""}

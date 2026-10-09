@@ -1,4 +1,5 @@
 import { listSubmissions } from "../api.js";
+import { modalitasText } from "../modalitas.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -33,13 +34,14 @@ function formatScore(value) {
 function renderDetails(item) {
   const references = item.references || item.sources || item.sources_used || item.fact_check_sources || [];
   const refs = Array.isArray(references) ? references : [];
-  const known = new Set(["id", "title", "url", "media_type", "type", "is_hoax", "verdict", "label", "confidence_score", "score", "explanation", "created_at", "state", "references", "sources", "sources_used", "fact_check_sources"]);
+  const known = new Set(["id", "title", "url", "media_type", "type", "is_hoax", "verdict", "label", "confidence_score", "score", "explanation", "created_at", "state", "modalitas_dinilai", "media_found", "references", "sources", "sources_used", "fact_check_sources"]);
   const verdict = item.verdict || item.label || (item.is_hoax === true ? "Terindikasi hoax" : item.is_hoax === false ? "Cenderung kredibel" : "Tidak diketahui");
   const score = item.confidence_score ?? item.score;
   const url = safeUrl(item.url || "");
   const details = [["Status", verdict], ["Skor keyakinan", score == null ? "Tidak tersedia" : formatScore(score)], ["Jenis media", item.media_type || item.type || "Tidak tersedia"], ["Waktu pemeriksaan", formatDate(item.created_at)]];
   if (item.id != null) details.unshift(["ID pemeriksaan", item.id]);
   if (item.title) details.push(["Judul", item.title]);
+  if (item.state === "done") details.push(["Modalitas dinilai", modalitasText(item.modalitas_dinilai)]);
   if (item.explanation) details.push(["Penjelasan", item.explanation]);
   for (const [key, value] of Object.entries(item)) if (!known.has(key) && value != null && value !== "") details.push([key.replaceAll("_", " "), detailValue(value)]);
 

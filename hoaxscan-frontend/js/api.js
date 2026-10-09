@@ -17,7 +17,8 @@ const LABELS = {
 /**
  * Mengubah SubmissionOut dari backend menjadi bentuk yang dipakai halaman:
  * { id, url, title, media_type, state, status, is_hoax, verdict,
- *   confidence_score, explanation, references, created_at, error_message }
+ *   confidence_score, explanation, references, modalitas_dinilai,
+ *   created_at, error_message }
  * state: "done" (ada hasil) | "pending" (belum dianalisis) | "failed"
  */
 export function toUiResult(sub) {
@@ -41,6 +42,7 @@ export function toUiResult(sub) {
       confidence_score: sub.result.confidence,
       explanation: sub.result.explanation,
       references: Array.isArray(sub.result.sources) ? sub.result.sources : [],
+      modalitas_dinilai: Array.isArray(sub.result.modalitas_dinilai) ? sub.result.modalitas_dinilai : [],
     };
   }
 
