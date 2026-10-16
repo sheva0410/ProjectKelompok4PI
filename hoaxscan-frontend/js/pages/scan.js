@@ -1,6 +1,6 @@
 import { submitUrl } from "../api.js";
 import { FriendlyError, errorMarkup } from "../errors.js";
-import { renderSteps } from "../progress.js";
+import { addLog, hostOf, newLog, noteStatus, renderLog, renderSteps, saveLog } from "../progress.js";
 import { navigate } from "../router.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
@@ -32,8 +32,8 @@ export function renderScan(root) {
         <label for="scan-url">URL artikel</label>
         <input id="scan-url" type="url" name="url" placeholder="https://nama-media.id/berita/..." autocomplete="url" aria-describedby="scan-help scan-error" />
         <p class="scan-help" id="scan-help">Gunakan alamat artikel lengkap yang diawali https://</p>
-        <div class="notice-error" id="scan-error" role="alert" hidden></div>
         <div class="scan-progress" id="scan-progress" aria-live="polite" hidden></div>
+        <div class="notice-error" id="scan-error" role="alert" hidden></div>
         <button type="submit" class="button button-primary button-block" id="scan-submit">Analisis artikel</button>
       </form>
     </div>
@@ -77,15 +77,21 @@ export function renderScan(root) {
     submitBtn.disabled = true;
     submitBtn.setAttribute("aria-busy", "true");
     submitBtn.textContent = "Membaca artikel...";
-    progressEl.innerHTML = renderSteps(0);
+    const log = addLog(newLog(), `Link dikirim: ${hostOf(url)}`);
+    progressEl.innerHTML = renderSteps(0) + renderLog(log);
     progressEl.hidden = false;
 
     try {
       const result = await submitUrl(url);
+      log.id = result.id;
+      addLog(log, result.title ? `Artikel terbaca: "${result.title}"` : "Artikel terbaca");
+      noteStatus(log, result);
+      saveLog(log);
       sessionStorage.setItem("hoaxscan_last_result", JSON.stringify(result));
       navigate("/result");
     } catch (err) {
-      progressEl.innerHTML = renderSteps(0, { failed: true });
+      addLog(log, `Berhenti: ${err.message}`, { error: true });
+      progressEl.innerHTML = renderSteps(0, { failed: true }) + renderLog(log, { running: false });
       showError(err);
       submitBtn.disabled = false;
       submitBtn.removeAttribute("aria-busy");

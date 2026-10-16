@@ -163,22 +163,29 @@ body{background-color:#fff;background-image:radial-gradient(#e7ece8 .8px,transpa
 /* Status bertahap, pesan galat, dan kerangka memuat (FE-04) */
 .history-controls[hidden]{display:none}
 .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px auto 20px;padding:0;max-width:560px;list-style:none;text-align:left;counter-reset:none}
-.step{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px 10px;background:#fff;border:1.5px solid var(--line);border-radius:4px;font-size:12px;line-height:1.35}
-.step-mark{display:grid;place-items:center;width:26px;height:26px;border:1.5px solid var(--line);border-radius:50%;background:#fff;font:500 12px 'DM Mono',monospace}
-.step-text b{display:block;font-size:13px}
-.step-text small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
-.step-todo{border-style:dashed;color:var(--muted)}
-.step-todo .step-mark{border-style:dashed}
-.step-done .step-mark{background:var(--mint)}
-.step-active{background:#fff7e3;box-shadow:3px 3px 0 var(--ink)}
-.step-active .step-mark{background:var(--yellow);animation:step-pulse 1.4s ease-in-out infinite}
-.step-failed{background:#fbecea;border-color:var(--red)}
-.step-failed .step-mark{background:var(--red);border-color:var(--red);color:#fff}
-@keyframes step-pulse{50%{box-shadow:0 0 0 5px rgba(255,192,77,.35)}}
-.scan-progress .steps{margin:16px 0 4px;max-width:none}
-.wait-status{max-width:520px;margin:0 auto 6px;color:var(--muted);font-size:14px;line-height:1.6}
-.wait-status span{display:block;margin-top:4px;font:12px 'DM Mono',monospace}
+/* Jalur tahapan dan catatan proses */
+.track{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-width:560px;margin:20px auto 0;padding:0;list-style:none;text-align:left}
+.track-bar{display:block;height:14px;background:#fff;border:1.5px solid var(--line);border-radius:3px}
+.track-label{display:block;margin-top:8px;line-height:1.35}
+.track-label b{display:block;font:500 11px 'DM Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+.track-label small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+.track .is-done .track-bar{background:var(--ink)}
+.track .is-active .track-bar{background:repeating-linear-gradient(-45deg,var(--yellow) 0 7px,var(--ink) 7px 14px);background-size:19.8px 19.8px;animation:track-move .9s linear infinite}
+.track .is-todo .track-bar{border-style:dashed}
+.track .is-todo .track-label b{color:var(--muted)}
+.track .is-failed .track-bar{background:var(--red);border-color:var(--red)}
+.track .is-failed .track-label b,.track .is-failed .track-label small{color:var(--red)}
+@keyframes track-move{to{background-position:19.8px 0}}
+.proc-log{max-width:560px;margin:16px auto 0;background:#fff;border:1.5px solid var(--line);border-radius:4px;box-shadow:4px 4px 0 var(--ink);text-align:left}
+.proc-log-head{display:flex;justify-content:space-between;gap:12px;padding:7px 12px;background:var(--surface);border-bottom:1.5px solid var(--line);font:500 11px 'DM Mono',monospace;letter-spacing:.04em;text-transform:uppercase}
+.proc-log ol{margin:0;padding:9px 12px 10px;list-style:none;font:12px/1.75 'DM Mono',monospace}
+.proc-log li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;color:var(--muted)}
+.proc-log li span{overflow-wrap:anywhere}
+.proc-log li:last-child{color:var(--ink);font-weight:500}
+.proc-log li.is-error{color:var(--red)}
+.scan-progress .track,.scan-progress .proc-log{max-width:none}
+.scan-progress{margin-top:4px}
+@media(max-width:480px){.track-label small{display:none}.track .is-active .track-label small{display:block}.proc-log li{gap:10px}}
 .notice-error,.notice-warn{margin:14px auto 0;max-width:520px;padding:13px 16px;border:1.5px solid;border-radius:4px;text-align:left;font-size:13px;line-height:1.55}
 .notice-error{background:#fbecea;border-color:var(--red);color:#7a2b2b}
 .notice-warn{background:#fff0d8;border-color:#806a45;color:#4f4130}
@@ -195,5 +202,4 @@ body{background-color:#fff;background-image:radial-gradient(#e7ece8 .8px,transpa
 .skeleton-line.short{width:45%}
 .skeleton-score{width:46px;height:20px;flex:none}
 @keyframes skeleton-shine{to{background-position:-200% 0}}
-@media(max-width:600px){.steps{grid-template-columns:1fr 1fr}}
-@media(prefers-reduced-motion:reduce){.step-active .step-mark,.skeleton{animation:none}}
+@media(prefers-reduced-motion:reduce){.track .is-active .track-bar,.skeleton{animation:none}}

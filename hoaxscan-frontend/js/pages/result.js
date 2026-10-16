@@ -1,7 +1,7 @@
 import { getSubmission } from "../api.js";
 import { renderModalitasBadges } from "../modalitas.js";
 import { FriendlyError, errorMarkup } from "../errors.js";
-import { renderSteps, stepIndexFor } from "../progress.js";
+import { addLog, loadLog, noteStatus, renderLog, renderSteps, saveLog, stepIndexFor } from "../progress.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -63,11 +63,14 @@ function articleInfo(result) {
 }
 
 function drawFailed(root, result) {
+  const log = noteStatus(loadLog(result), result);
+  saveLog(log);
   root.innerHTML = `
     <section class="result-shell uncertain">
       <span class="section-label">pemeriksaan gagal</span>
       ${articleInfo(result)}
       ${renderSteps(2, { failed: true })}
+      ${renderLog(log, { running: false })}
       <div class="notice-error" role="alert">${errorMarkup(new FriendlyError(result.explanation, result.error_hint), escapeHtml)}</div>
       <div class="result-actions">
         ${result.url ? '<button type="button" class="button button-primary" id="retry-scan">Coba periksa lagi</button>' : '<a href="#/scan" class="button button-primary">Periksa link lain</a>'}
@@ -90,7 +93,9 @@ function drawWaiting(root, result, poll) {
   const tooLong = waited >= MAX_WAIT_MS;
   const tooManyErrors = poll.errors >= MAX_POLL_ERRORS;
   const keepPolling = result.id != null && !tooLong && !tooManyErrors;
-  const seconds = Math.round(waited / 1000);
+  const log = noteStatus(loadLog(result), result);
+  saveLog(log);
+  const latest = log.entries[log.entries.length - 1]?.text || result.explanation;
 
   let notice = "";
   if (tooManyErrors) {
@@ -104,7 +109,8 @@ function drawWaiting(root, result, poll) {
       <span class="section-label">sedang diproses</span>
       ${articleInfo(result)}
       ${renderSteps(stepIndexFor(result.status))}
-      <p class="wait-status" role="status" aria-live="polite">${escapeHtml(result.explanation)}${seconds >= 2 ? ` <span>Sudah menunggu ${seconds} detik.</span>` : ""}</p>
+      ${renderLog(log, { running: keepPolling })}
+      <p class="visually-hidden" role="status" aria-live="polite">${escapeHtml(latest)}</p>
       ${notice}
       <div class="result-actions">
         ${keepPolling ? "" : '<button type="button" class="button button-primary" id="poll-again">Cek lagi</button>'}
@@ -130,6 +136,7 @@ function drawWaiting(root, result, poll) {
       drawResult(root, fresh, { ...poll, tries: poll.tries + 1, errors: 0 });
     } catch (err) {
       if (window.location.hash !== "#/result") return;
+      saveLog(addLog(loadLog(result), "Status belum bisa dicek, mencoba lagi", { error: true }));
       drawWaiting(root, result, { ...poll, tries: poll.tries + 1, errors: poll.errors + 1, lastError: err });
     }
   }, wait);
