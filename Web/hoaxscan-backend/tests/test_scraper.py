@@ -1,12 +1,7 @@
-import ipaddress
 import socket
-from dataclasses import dataclass, field
-from urllib.parse import urlparse
 
 import pytest
 import requests
-from newspaper import Article as NewsArticle
-from app.services.media import find_media
 
 from app.services import scraper
 from app.services.scraper import ScrapeError, _check_url, extract_article, fetch_html
