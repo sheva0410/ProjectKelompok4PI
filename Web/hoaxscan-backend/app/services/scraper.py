@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlparse
 
 import requests
-import trafilatura
+from newspaper import Article as NewsArticle
 from app.services.media import find_media
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; HoaxScanBot/1.0)"}
@@ -63,10 +63,10 @@ def fetch_html(url: str) -> tuple[str, str]:
 def extract_article(url: str) -> Article:
     html, final_url = fetch_html(url)
     try:
-        text = trafilatura.extract(
-            html, include_comments=False, include_tables=False
-        )
-        meta = trafilatura.extract_metadata(html)
+        na = NewsArticle(final_url, language="id")
+        na.download(input_html=html)  # HTML sudah diambil lewat fetch_html (aman SSRF)
+        na.parse()
+        text = na.text
     except Exception:
         raise ScrapeError("Gagal membaca isi halaman")
 
@@ -74,7 +74,7 @@ def extract_article(url: str) -> Article:
         raise ScrapeError(
             "Isi artikel tidak ditemukan (halaman kosong, terkunci, atau butuh login)"
         )
-    title = meta.title if meta and meta.title else None
+    title = na.title or None
     top_image, video_urls = find_media(html, final_url)
     return Article(
         title=title, text=text, top_image=top_image, video_urls=video_urls
