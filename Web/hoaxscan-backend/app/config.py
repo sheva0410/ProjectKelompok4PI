@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     jwt_secret: str = ""
     gemini_api_key: str = ""
     stub_delay_seconds: int = 0
+    model_dir: str = "models/indobert-hoax-v1"
 
 
 settings = Settings()
