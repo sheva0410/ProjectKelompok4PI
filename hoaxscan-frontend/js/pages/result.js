@@ -1,5 +1,7 @@
 import { getSubmission } from "../api.js";
 import { renderModalitasBadges } from "../modalitas.js";
+import { FriendlyError, errorMarkup } from "../errors.js";
+import { renderSteps, stepIndexFor } from "../progress.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -41,44 +43,106 @@ export function renderResult(root) {
   drawResult(root, result);
 }
 
-const POLL_INTERVAL_MS = 3000;
-const POLL_MAX_TRIES = 10;
+// Cek ulang status makin jarang: 2, 2, 3, 3, lalu tiap 5 detik.
+const POLL_DELAYS_MS = [2000, 2000, 3000, 3000, 5000];
+const MAX_WAIT_MS = 120000;
+const MAX_POLL_ERRORS = 3;
 
-function drawPending(root, result, tries = 0) {
-  const failed = result.state === "failed";
-  const waiting = !failed && result.id != null && tries < POLL_MAX_TRIES;
+// Hanya satu timer cek ulang yang boleh aktif; dibersihkan saat pindah halaman.
+let pollTimer = null;
+function stopPolling() {
+  clearTimeout(pollTimer);
+  pollTimer = null;
+}
+window.addEventListener("hashchange", stopPolling);
+
+function articleInfo(result) {
+  return `
+    ${result.title ? `<h2 class="result-title">${escapeHtml(result.title)}</h2>` : ""}
+    ${result.url ? `<p class="scan-help">${escapeHtml(result.url)}</p>` : ""}`;
+}
+
+function drawFailed(root, result) {
   root.innerHTML = `
     <section class="result-shell uncertain">
-      <span class="section-label">${failed ? "pemeriksaan gagal" : "link diterima"}</span>
-      <div class="result-tag">${escapeHtml(result.verdict)}</div>
-      <p class="explanation">${escapeHtml(result.explanation)}</p>
-      ${result.url ? `<p class="scan-help">${escapeHtml(result.url)}</p>` : ""}
-      <p class="result-limit" role="status" aria-live="polite">${waiting ? "Halaman ini akan memeriksa hasilnya secara otomatis..." : failed ? "Coba periksa link lain, atau ulangi beberapa saat lagi." : "Analisis belum selesai. Kamu bisa kembali ke sini lewat Riwayat."}</p>
+      <span class="section-label">pemeriksaan gagal</span>
+      ${articleInfo(result)}
+      ${renderSteps(2, { failed: true })}
+      <div class="notice-error" role="alert">${errorMarkup(new FriendlyError(result.explanation, result.error_hint), escapeHtml)}</div>
       <div class="result-actions">
-        <a href="#/scan" class="button button-primary">Periksa link lain</a>
+        ${result.url ? '<button type="button" class="button button-primary" id="retry-scan">Coba periksa lagi</button>' : '<a href="#/scan" class="button button-primary">Periksa link lain</a>'}
         <a href="#/history" class="button">Lihat riwayat</a>
       </div>
     </section>
   `;
-  if (!waiting) return;
-
-  const timer = setTimeout(async () => {
-    if (!root.isConnected || !root.querySelector(".result-shell")) return;
-    try {
-      const fresh = await getSubmission(result.id);
-      sessionStorage.setItem("hoaxscan_last_result", JSON.stringify(fresh));
-      if (window.location.hash !== "#/result") return;
-      drawResult(root, fresh, tries + 1);
-    } catch {
-      if (window.location.hash === "#/result") drawPending(root, result, tries + 1);
-    }
-  }, POLL_INTERVAL_MS);
-  window.addEventListener("hashchange", () => clearTimeout(timer), { once: true });
+  root.querySelector("#retry-scan")?.addEventListener("click", () => {
+    sessionStorage.setItem("hoaxscan_pending_url", result.url);
+    window.location.hash = "#/scan";
+  });
 }
 
-function drawResult(root, result, tries = 0) {
-  if (result.state === "pending" || result.state === "failed") {
-    drawPending(root, result, tries);
+/**
+ * poll.started: kapan mulai menunggu (ms), poll.tries: jumlah cek ulang,
+ * poll.errors: galat jaringan berturut-turut, poll.lastError: galat terakhir.
+ */
+function drawWaiting(root, result, poll) {
+  const waited = Date.now() - poll.started;
+  const tooLong = waited >= MAX_WAIT_MS;
+  const tooManyErrors = poll.errors >= MAX_POLL_ERRORS;
+  const keepPolling = result.id != null && !tooLong && !tooManyErrors;
+  const seconds = Math.round(waited / 1000);
+
+  let notice = "";
+  if (tooManyErrors) {
+    notice = `<div class="notice-error" role="alert">${errorMarkup(poll.lastError, escapeHtml)}</div>`;
+  } else if (tooLong) {
+    notice = `<div class="notice-warn" role="status"><strong>Analisisnya lebih lama dari biasanya.</strong><span>Prosesnya mungkin masih berjalan. Cek lagi nanti, atau buka dari halaman Riwayat.</span></div>`;
+  }
+
+  root.innerHTML = `
+    <section class="result-shell uncertain">
+      <span class="section-label">sedang diproses</span>
+      ${articleInfo(result)}
+      ${renderSteps(stepIndexFor(result.status))}
+      <p class="wait-status" role="status" aria-live="polite">${escapeHtml(result.explanation)}${seconds >= 2 ? ` <span>Sudah menunggu ${seconds} detik.</span>` : ""}</p>
+      ${notice}
+      <div class="result-actions">
+        ${keepPolling ? "" : '<button type="button" class="button button-primary" id="poll-again">Cek lagi</button>'}
+        <a href="#/scan" class="button${keepPolling ? " button-primary" : ""}">Periksa link lain</a>
+        <a href="#/history" class="button">Lihat riwayat</a>
+      </div>
+    </section>
+  `;
+
+  root.querySelector("#poll-again")?.addEventListener("click", () => {
+    drawWaiting(root, result, { started: Date.now(), tries: 0, errors: 0 });
+  });
+  if (!keepPolling) return;
+
+  const wait = POLL_DELAYS_MS[Math.min(poll.tries, POLL_DELAYS_MS.length - 1)];
+  stopPolling();
+  pollTimer = setTimeout(async () => {
+    if (window.location.hash !== "#/result") return;
+    try {
+      const fresh = await getSubmission(result.id);
+      if (window.location.hash !== "#/result") return;
+      sessionStorage.setItem("hoaxscan_last_result", JSON.stringify(fresh));
+      drawResult(root, fresh, { ...poll, tries: poll.tries + 1, errors: 0 });
+    } catch (err) {
+      if (window.location.hash !== "#/result") return;
+      drawWaiting(root, result, { ...poll, tries: poll.tries + 1, errors: poll.errors + 1, lastError: err });
+    }
+  }, wait);
+}
+
+function drawResult(root, result, poll = { started: Date.now(), tries: 0, errors: 0 }) {
+  stopPolling();
+  if (result.state === "failed") {
+    drawFailed(root, result);
+    return;
+  }
+  if (result.state === "pending") {
+    drawWaiting(root, result, poll);
     return;
   }
 
@@ -103,8 +167,7 @@ function drawResult(root, result, tries = 0) {
   root.innerHTML = `
     <section class="result-shell ${statusClass}" style="--pct:${pct};">
       <span class="section-label">ringkasan pemeriksaan</span>
-      ${result.title ? `<h2 class="result-title">${escapeHtml(result.title)}</h2>` : ""}
-      ${result.url ? `<p class="scan-help">${escapeHtml(result.url)}</p>` : ""}
+      ${articleInfo(result)}
       <div class="ring" role="img" aria-label="Skor keyakinan ${pct} persen">
         <div class="ring-inner"><b>${pct}%</b><small>keyakinan</small></div>
       </div>

@@ -159,3 +159,41 @@ body{background-color:#fff;background-image:radial-gradient(#e7ece8 .8px,transpa
   .hm-actions .button,.hm-cta .button{width:100%}
 }
 @media(prefers-reduced-motion:reduce){.hm-sample,.hm-steps li,.hm-card{transition:none}.hm-sample{transform:none}.hm-steps li:hover,.hm-card:hover{transform:none}}
+
+/* Status bertahap, pesan galat, dan kerangka memuat (FE-04) */
+.history-controls[hidden]{display:none}
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px auto 20px;padding:0;max-width:560px;list-style:none;text-align:left;counter-reset:none}
+.step{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px 10px;background:#fff;border:1.5px solid var(--line);border-radius:4px;font-size:12px;line-height:1.35}
+.step-mark{display:grid;place-items:center;width:26px;height:26px;border:1.5px solid var(--line);border-radius:50%;background:#fff;font:500 12px 'DM Mono',monospace}
+.step-text b{display:block;font-size:13px}
+.step-text small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+.step-todo{border-style:dashed;color:var(--muted)}
+.step-todo .step-mark{border-style:dashed}
+.step-done .step-mark{background:var(--mint)}
+.step-active{background:#fff7e3;box-shadow:3px 3px 0 var(--ink)}
+.step-active .step-mark{background:var(--yellow);animation:step-pulse 1.4s ease-in-out infinite}
+.step-failed{background:#fbecea;border-color:var(--red)}
+.step-failed .step-mark{background:var(--red);border-color:var(--red);color:#fff}
+@keyframes step-pulse{50%{box-shadow:0 0 0 5px rgba(255,192,77,.35)}}
+.scan-progress .steps{margin:16px 0 4px;max-width:none}
+.wait-status{max-width:520px;margin:0 auto 6px;color:var(--muted);font-size:14px;line-height:1.6}
+.wait-status span{display:block;margin-top:4px;font:12px 'DM Mono',monospace}
+.notice-error,.notice-warn{margin:14px auto 0;max-width:520px;padding:13px 16px;border:1.5px solid;border-radius:4px;text-align:left;font-size:13px;line-height:1.55}
+.notice-error{background:#fbecea;border-color:var(--red);color:#7a2b2b}
+.notice-warn{background:#fff0d8;border-color:#806a45;color:#4f4130}
+.notice-error strong,.notice-warn strong{display:block}
+.notice-error span,.notice-warn span{display:block;margin-top:3px}
+.scan-shell .notice-error{max-width:none;margin:12px 0 0}
+.state-card .notice-error{flex:1;margin:0;max-width:none}
+.skeleton-list{display:grid;gap:12px}
+.skeleton-row{display:flex;align-items:center;gap:14px;padding:16px;background:#fff;border:1.5px solid #d6dfda;border-radius:4px}
+.skeleton-lines{display:grid;flex:1;gap:8px}
+.skeleton{display:block;border-radius:3px;background:linear-gradient(90deg,#e8efeb 25%,#f5f9f7 50%,#e8efeb 75%);background-size:200% 100%;animation:skeleton-shine 1.3s ease-in-out infinite}
+.skeleton-icon{width:44px;height:44px;flex:none}
+.skeleton-line{height:12px;width:80%}
+.skeleton-line.short{width:45%}
+.skeleton-score{width:46px;height:20px;flex:none}
+@keyframes skeleton-shine{to{background-position:-200% 0}}
+@media(max-width:600px){.steps{grid-template-columns:1fr 1fr}}
+@media(prefers-reduced-motion:reduce){.step-active .step-mark,.skeleton{animation:none}}

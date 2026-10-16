@@ -3,9 +3,11 @@
 // Halaman (pages/*.js) tidak memanggil fetch() langsung; mereka memakai
 // submitUrl / getSubmission / listSubmissions di bawah dan menerima bentuk
 // data yang sama, baik MOCK_MODE true maupun false.
+// Semua galat yang dilempar berupa FriendlyError (lihat errors.js).
 
 import { API_BASE_URL, MOCK_MODE } from "./config.js";
-import { delay, mockAnalyzeLink, mockSaveHistory, mockGetHistory } from "./mock.js";
+import { FriendlyError, networkError, timeoutError, toFriendlyError } from "./errors.js";
+import { delay, mockCreate, mockGet, mockList } from "./mock.js";
 
 // Label dari backend (analysis_results.label) -> tampilan di UI.
 const LABELS = {
@@ -14,12 +16,21 @@ const LABELS = {
   tidak_pasti: { is_hoax: null, verdict: "Tidak pasti" },
 };
 
+// Teks untuk submission yang belum selesai, per status backend.
+const WAITING = {
+  pending: { verdict: "Menunggu analisis", explanation: "Link sudah diterima dan menunggu giliran dianalisis." },
+  processing: { verdict: "Sedang dianalisis", explanation: "Artikel sudah dibaca dan sedang dinilai." },
+};
+
+// Batas waktu request. POST lebih lama karena backend membaca artikel dulu.
+const TIMEOUT_MS = { GET: 20000, POST: 45000 };
+
 /**
  * Mengubah SubmissionOut dari backend menjadi bentuk yang dipakai halaman:
  * { id, url, title, media_type, state, status, is_hoax, verdict,
- *   confidence_score, explanation, references, modalitas_dinilai,
- *   created_at, error_message }
- * state: "done" (ada hasil) | "pending" (belum dianalisis) | "failed"
+ *   confidence_score, explanation, error_hint, references,
+ *   modalitas_dinilai, media_found, created_at, error_message }
+ * state: "done" (ada hasil) | "pending" (pending/processing) | "failed"
  */
 export function toUiResult(sub) {
   const base = {
@@ -31,6 +42,7 @@ export function toUiResult(sub) {
     error_message: sub.error_message || null,
     created_at: sub.result?.created_at || sub.created_at,
   };
+  if (Array.isArray(sub.media_found)) base.media_found = sub.media_found;
 
   if (sub.result) {
     const label = LABELS[sub.result.label] || LABELS.tidak_pasti;
@@ -46,75 +58,85 @@ export function toUiResult(sub) {
     };
   }
 
-  const failed = Boolean(sub.error_message) || /fail|error|gagal/i.test(sub.status || "");
-  return {
-    ...base,
-    state: failed ? "failed" : "pending",
-    is_hoax: null,
-    verdict: failed ? "Gagal diperiksa" : "Belum dianalisis",
-    confidence_score: null,
-    explanation: failed
-      ? sub.error_message || "Artikel tidak dapat diperiksa."
-      : "Link sudah diterima dan sedang menunggu analisis.",
-    references: [],
-  };
+  const failed = sub.status === "failed" || Boolean(sub.error_message) || /fail|error|gagal/i.test(sub.status || "");
+  if (failed) {
+    const friendly = toFriendlyError(sub.error_message || "Analisis gagal.");
+    return {
+      ...base,
+      state: "failed",
+      is_hoax: null,
+      verdict: "Gagal diperiksa",
+      confidence_score: null,
+      explanation: friendly.message,
+      error_hint: friendly.hint,
+      references: [],
+    };
+  }
+
+  const waiting = WAITING[sub.status] || WAITING.pending;
+  return { ...base, state: "pending", is_hoax: null, confidence_score: null, references: [], ...waiting };
 }
 
 // FastAPI mengirim error validasi sebagai { detail: [{ msg, ... }] }
 // dan error biasa sebagai { detail: "teks" }.
-function errorMessage(data) {
+function errorDetail(data) {
   const detail = data && (data.detail ?? data.message);
   if (Array.isArray(detail)) {
-    return detail.map((d) => String(d.msg || "").replace(/^Value error,\s*/i, "")).filter(Boolean).join(" ")
-      || "Data yang dikirim tidak valid.";
+    return detail.map((d) => String(d.msg || "").replace(/^Value error,\s*/i, "")).filter(Boolean).join(" ");
   }
-  return typeof detail === "string" && detail ? detail : "Terjadi kesalahan pada server.";
+  return typeof detail === "string" ? detail : "";
 }
 
 async function request(path, { method = "GET", body = null } = {}) {
-  const config = { method, headers: { "Content-Type": "application/json" } };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS[method] || TIMEOUT_MS.GET);
+  const config = { method, headers: { "Content-Type": "application/json" }, signal: controller.signal };
   if (body !== null) config.body = JSON.stringify(body);
 
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, config);
-  } catch {
-    throw new Error("Tidak dapat terhubung ke server. Pastikan backend sudah berjalan.");
+  } catch (err) {
+    throw err?.name === "AbortError" ? timeoutError() : networkError();
+  } finally {
+    clearTimeout(timer);
   }
 
   const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await response.json() : null;
-  if (!response.ok) throw new Error(errorMessage(data));
+  const data = contentType.includes("application/json") ? await response.json().catch(() => null) : null;
+  if (!response.ok) throw toFriendlyError(errorDetail(data), response.status);
   return data;
+}
+
+// Menjalankan versi mock dengan bentuk galat yang sama seperti backend asli.
+async function fromMock(fn, wait) {
+  await delay(wait);
+  const out = fn();
+  if (out && out.error) throw toFriendlyError(out.error.detail, out.error.status);
+  return out;
 }
 
 // POST /api/submissions -> kirim link, balikan satu pemeriksaan.
 export async function submitUrl(url) {
-  if (MOCK_MODE) {
-    await delay(1100);
-    const result = { ...mockAnalyzeLink(url), url };
-    return mockSaveHistory(result);
-  }
-  return toUiResult(await request("/submissions", { method: "POST", body: { url } }));
+  const sub = MOCK_MODE
+    ? await fromMock(() => mockCreate(url), 1500)
+    : await request("/submissions", { method: "POST", body: { url } });
+  return toUiResult(sub);
 }
 
 // GET /api/submissions/{id} -> ambil ulang satu pemeriksaan (untuk cek status).
 export async function getSubmission(id) {
-  if (MOCK_MODE) {
-    await delay(300);
-    const found = mockGetHistory().find((item) => item.id === id);
-    if (!found) throw new Error("Pemeriksaan tidak ditemukan.");
-    return found;
-  }
-  return toUiResult(await request(`/submissions/${encodeURIComponent(id)}`));
+  const sub = MOCK_MODE
+    ? await fromMock(() => mockGet(id), 300)
+    : await request(`/submissions/${encodeURIComponent(id)}`);
+  return toUiResult(sub);
 }
 
 // GET /api/submissions -> riwayat pemeriksaan, terbaru di atas.
 export async function listSubmissions(limit = 100) {
-  if (MOCK_MODE) {
-    await delay(500);
-    return mockGetHistory();
-  }
-  const items = await request(`/submissions?limit=${limit}`);
+  const items = MOCK_MODE
+    ? await fromMock(() => mockList(), 700)
+    : await request(`/submissions?limit=${limit}`);
+  if (!Array.isArray(items)) throw new FriendlyError("Data riwayat dari server tidak bisa dibaca.", "Coba muat ulang halaman.");
   return items.map(toUiResult);
 }

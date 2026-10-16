@@ -1,10 +1,10 @@
 // mock.js
-// Semua logika "pura-pura backend" khusus untuk FE-01 (kerangka UI + data contoh).
-// Dipakai oleh api.js HANYA saat MOCK_MODE true (lihat config.js).
+// "Pura-pura backend" untuk demo tanpa server (MOCK_MODE = true di config.js).
+// Bentuk datanya meniru SubmissionOut dari backend FastAPI, termasuk tahapan
+// status pending -> processing -> done, supaya alur di UI sama persis.
 //
-// Saat FE-02 dikerjakan (sambung ke Django beneran):
-//   1. Set MOCK_MODE = false di config.js
-//   2. File ini tidak perlu dihapus, aman dibiarkan (tidak lagi dipanggil)
+// Demo galat: link yang mengandung kata kunci di MOCK_ERRORS akan gagal,
+// misalnya https://contoh.id/403 atau https://contoh.id/gagal-analisis.
 
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,42 +13,95 @@ const TRUSTED_DOMAINS = [
   "antaranews.com", "cnnindonesia.com", "katadata.co.id",
 ];
 
-// Meniru hasil pemeriksaan link dalam bentuk yang sama dengan toUiResult() di api.js.
-export function mockAnalyzeLink(url) {
+// Galat saat membaca artikel (dibalas langsung oleh POST, seperti 422 backend).
+const MOCK_ERRORS = {
+  "/403": "Situs menolak akses (HTTP 403)",
+  "/404": "Situs menolak akses (HTTP 404)",
+  "tidak-ada.invalid": "Domain tidak ditemukan",
+  "/kosong": "Isi artikel tidak ditemukan (halaman kosong, terkunci, atau butuh login)",
+};
+
+// Lama tiap tahap (ms) sejak link dikirim.
+const PENDING_MS = 2500;
+const PROCESSING_MS = 6000;
+
+// "Database" riwayat contoh, disimpan di localStorage browser.
+const HISTORY_KEY = "hoaxscan_mock_history_v2";
+
+function load() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function save(items) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(items.slice(0, 20)));
+}
+
+function analyze(url) {
   const lower = (url || "").toLowerCase();
   const isTrusted = TRUSTED_DOMAINS.some((d) => lower.includes(d));
-  const score = isTrusted ? 8 + Math.round(Math.random() * 10) : 55 + Math.round(Math.random() * 35);
-  const is_hoax = score >= 50;
-
-  const explanation = is_hoax
-    ? "Domain sumber tidak terdaftar sebagai media terverifikasi, dan pola URL menyerupai situs yang pernah menyebarkan klaim tidak berdasar."
-    : "Domain sumber terdaftar sebagai media yang umumnya melakukan verifikasi fakta sebelum publikasi.";
-
+  const confidence = isTrusted ? 0.08 + Math.random() * 0.1 : 0.55 + Math.random() * 0.35;
+  const isHoax = confidence >= 0.5;
   return {
-    media_type: "link",
-    state: "done",
-    is_hoax,
-    verdict: is_hoax ? "Terindikasi hoax" : "Cenderung kredibel",
-    confidence_score: score,
-    explanation,
-    references: [],
-    // Mode demo: hanya teks yang dinilai, artikel contoh memuat gambar dan video.
+    label: isHoax ? "hoax" : "fakta",
+    confidence: Math.round(confidence * 100) / 100,
+    explanation: isHoax
+      ? "Domain sumber tidak terdaftar sebagai media terverifikasi, dan pola URL menyerupai situs yang pernah menyebarkan klaim tidak berdasar."
+      : "Domain sumber terdaftar sebagai media yang umumnya melakukan verifikasi fakta sebelum publikasi.",
+    sources: [],
     modalitas_dinilai: ["teks"],
-    media_found: ["gambar", "video"],
   };
 }
 
-// "Database" riwayat contoh, disimpan di localStorage browser.
-const HISTORY_KEY = "hoaxscan_mock_history";
-
-export function mockSaveHistory(result) {
-  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
-  const saved = { ...result, id: Date.now(), created_at: new Date().toISOString() };
-  history.unshift(saved);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
-  return saved;
+// Menghitung status submission berdasarkan waktu yang sudah berlalu.
+function withStage(record) {
+  const elapsed = Date.now() - new Date(record.created_at).getTime();
+  const { final, fail, ...sub } = record;
+  if (elapsed < PENDING_MS) return { ...sub, status: "pending", error_message: null, result: null };
+  if (elapsed < PENDING_MS + PROCESSING_MS) return { ...sub, status: "processing", error_message: null, result: null };
+  if (fail) return { ...sub, status: "failed", error_message: "Analisis gagal. Coba lagi nanti.", result: null };
+  return {
+    ...sub,
+    status: "done",
+    error_message: null,
+    result: { ...final, created_at: new Date(new Date(record.created_at).getTime() + PENDING_MS + PROCESSING_MS).toISOString() },
+  };
 }
 
-export function mockGetHistory() {
-  return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+// Meniru POST /api/submissions.
+export function mockCreate(url) {
+  const value = String(url || "").trim();
+  if (!/^https?:\/\/[^/\s]+/i.test(value)) {
+    return { error: { status: 422, detail: "URL harus diawali http:// atau https://" } };
+  }
+  const errorKey = Object.keys(MOCK_ERRORS).find((key) => value.toLowerCase().includes(key));
+  if (errorKey) return { error: { status: 422, detail: MOCK_ERRORS[errorKey] } };
+
+  const record = {
+    id: Date.now(),
+    url: value,
+    normalized_url: value,
+    title: "Contoh judul artikel dari mode demo",
+    created_at: new Date().toISOString(),
+    media_found: ["gambar", "video"],
+    fail: value.toLowerCase().includes("gagal-analisis"),
+    final: analyze(value),
+  };
+  save([record, ...load()]);
+  return withStage(record);
+}
+
+// Meniru GET /api/submissions/{id}.
+export function mockGet(id) {
+  const record = load().find((item) => item.id === id);
+  if (!record) return { error: { status: 404, detail: "Submission tidak ditemukan" } };
+  return withStage(record);
+}
+
+// Meniru GET /api/submissions.
+export function mockList() {
+  return load().map(withStage);
 }

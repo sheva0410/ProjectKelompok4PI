@@ -1,5 +1,7 @@
 import { listSubmissions } from "../api.js";
 import { modalitasText } from "../modalitas.js";
+import { errorMarkup } from "../errors.js";
+import { renderSkeletonList } from "../progress.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -34,7 +36,7 @@ function formatScore(value) {
 function renderDetails(item) {
   const references = item.references || item.sources || item.sources_used || item.fact_check_sources || [];
   const refs = Array.isArray(references) ? references : [];
-  const known = new Set(["id", "title", "url", "media_type", "type", "is_hoax", "verdict", "label", "confidence_score", "score", "explanation", "created_at", "state", "modalitas_dinilai", "media_found", "references", "sources", "sources_used", "fact_check_sources"]);
+  const known = new Set(["id", "title", "url", "media_type", "type", "is_hoax", "verdict", "label", "confidence_score", "score", "explanation", "created_at", "state", "status", "error_message", "error_hint", "modalitas_dinilai", "media_found", "references", "sources", "sources_used", "fact_check_sources"]);
   const verdict = item.verdict || item.label || (item.is_hoax === true ? "Terindikasi hoax" : item.is_hoax === false ? "Cenderung kredibel" : "Tidak diketahui");
   const score = item.confidence_score ?? item.score;
   const url = safeUrl(item.url || "");
@@ -42,7 +44,8 @@ function renderDetails(item) {
   if (item.id != null) details.unshift(["ID pemeriksaan", item.id]);
   if (item.title) details.push(["Judul", item.title]);
   if (item.state === "done") details.push(["Modalitas dinilai", modalitasText(item.modalitas_dinilai)]);
-  if (item.explanation) details.push(["Penjelasan", item.explanation]);
+  if (item.explanation) details.push([item.state === "failed" ? "Masalah" : "Penjelasan", item.explanation]);
+  if (item.error_hint) details.push(["Saran", item.error_hint]);
   for (const [key, value] of Object.entries(item)) if (!known.has(key) && value != null && value !== "") details.push([key.replaceAll("_", " "), detailValue(value)]);
 
   const referenceMarkup = refs.length ? `<div class="history-detail-row"><dt>Rujukan</dt><dd><ul>${refs.map((ref) => {
@@ -54,6 +57,7 @@ function renderDetails(item) {
 }
 
 function historyVerdict(item) {
+  if (item.state === "pending" || item.state === "failed") return "uncertain";
   const status = item.verdict || item.label || "";
   if (/tidak pasti|uncertain|tidak diketahui|belum|gagal/i.test(status) || (!status && item.is_hoax == null)) return "uncertain";
   return item.is_hoax === true || (/hoax|palsu/i.test(status) && !/bukan|tidak/i.test(status)) ? "hoax" : "valid";
@@ -66,10 +70,10 @@ export function renderHistory(root) {
       <label for="history-search">Cari judul atau domain</label>
       <input id="history-search" type="search" placeholder="Contoh: kompas.com" autocomplete="off">
       <label for="history-filter">Hasil</label>
-      <select id="history-filter"><option value="all">Semua hasil</option><option value="hoax">Terindikasi hoax</option><option value="valid">Cenderung kredibel</option><option value="uncertain">Tidak pasti / belum dianalisis</option></select>
+      <select id="history-filter"><option value="all">Semua hasil</option><option value="hoax">Terindikasi hoax</option><option value="valid">Cenderung kredibel</option><option value="uncertain">Tidak pasti / belum selesai</option></select>
       <p id="history-count" class="history-count" aria-live="polite"></p>
     </div>
-    <div id="history-list" aria-live="polite" aria-busy="true"><div class="card" role="status">Memuat riwayat...</div></div>
+    <div id="history-list" aria-live="polite" aria-busy="true">${renderSkeletonList(4, "Memuat riwayat...")}</div>
   `;
   loadHistory(root);
 }
@@ -125,11 +129,11 @@ async function loadHistory(root) {
     root.querySelector("#history-filter").addEventListener("change", () => renderHistoryItems(root, items));
     renderHistoryItems(root, items);
   } catch (err) {
-    listEl.innerHTML = `<div class="card state-card"><p class="form-error" role="alert">Riwayat gagal dimuat: ${escapeHtml(err.message)}</p><button class="button button-primary" id="history-retry" type="button">Coba lagi</button></div>`;
+    listEl.innerHTML = `<div class="card state-card"><div class="notice-error" role="alert"><strong>Riwayat gagal dimuat.</strong>${errorMarkup(err, escapeHtml)}</div><button class="button button-primary" id="history-retry" type="button">Coba lagi</button></div>`;
     listEl.setAttribute("aria-busy", "false");
     listEl.querySelector("#history-retry").addEventListener("click", () => {
       listEl.setAttribute("aria-busy", "true");
-      listEl.innerHTML = `<div class="card" role="status">Memuat riwayat...</div>`;
+      listEl.innerHTML = renderSkeletonList(4, "Memuat riwayat...");
       loadHistory(root);
     });
   }

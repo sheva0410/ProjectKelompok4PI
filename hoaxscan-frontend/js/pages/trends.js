@@ -1,4 +1,6 @@
 import { listSubmissions } from "../api.js";
+import { errorMarkup } from "../errors.js";
+import { renderSkeletonList } from "../progress.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -32,7 +34,7 @@ export function renderTrends(root) {
         <p>Daftar ini dirangkum dari riwayat pemeriksaan yang tersedia untukmu. Link dengan URL artikel yang sama dikelompokkan bersama.</p>
       </header>
       <div class="trend-source-note"><strong>Cakupan data</strong><span>Urutan dan jumlah dihitung dari riwayat pemeriksaan yang dikirim aplikasi. Data agregat publik seluruh pengguna belum tersedia.</span></div>
-      <div id="trends-list" aria-live="polite" aria-busy="true"><div class="card" role="status">Memuat tren...</div></div>
+      <div id="trends-list" aria-live="polite" aria-busy="true">${renderSkeletonList(3, "Memuat tren...")}</div>
     </section>
   `;
 
@@ -82,11 +84,11 @@ async function loadTrends(listEl) {
     });
     listEl.setAttribute("aria-busy", "false");
   } catch (err) {
-    listEl.innerHTML = `<div class="card state-card"><p class="form-error" role="alert">Tren gagal dimuat: ${escapeHtml(err.message)}</p><button class="button button-primary" id="trends-retry" type="button">Coba lagi</button></div>`;
+    listEl.innerHTML = `<div class="card state-card"><div class="notice-error" role="alert"><strong>Tren gagal dimuat.</strong>${errorMarkup(err, escapeHtml)}</div><button class="button button-primary" id="trends-retry" type="button">Coba lagi</button></div>`;
     listEl.setAttribute("aria-busy", "false");
     listEl.querySelector("#trends-retry").addEventListener("click", () => {
       listEl.setAttribute("aria-busy", "true");
-      listEl.innerHTML = `<div class="card" role="status">Memuat tren...</div>`;
+      listEl.innerHTML = renderSkeletonList(3, "Memuat tren...");
       loadTrends(listEl);
     });
   }
