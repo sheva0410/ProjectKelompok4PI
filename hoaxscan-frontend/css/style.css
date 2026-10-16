@@ -203,3 +203,8 @@ body{background-color:#fff;background-image:radial-gradient(#e7ece8 .8px,transpa
 .skeleton-score{width:46px;height:20px;flex:none}
 @keyframes skeleton-shine{to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){.track .is-active .track-bar,.skeleton{animation:none}}
+
+/* Tata letak di lebar ponsel (FE-08) */
+.trend-list{grid-template-columns:minmax(0,1fr)}
+.trend-item{min-width:0}
+.history-item.uncertain{border-left:6px solid #c9a227}
