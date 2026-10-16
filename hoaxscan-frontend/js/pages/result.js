@@ -1,7 +1,8 @@
 import { getSubmission } from "../api.js";
+import { buildSummary, canNativeShare, copyText } from "../share.js";
 import { renderModalitasBadges } from "../modalitas.js";
 import { FriendlyError, errorMarkup } from "../errors.js";
-import { addLog, loadLog, noteStatus, renderLog, renderSteps, saveLog, stepIndexFor } from "../progress.js";
+import { addLog, hostOf, loadLog, noteStatus, renderLog, renderSteps, saveLog, stepIndexFor } from "../progress.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -55,6 +56,24 @@ function stopPolling() {
   pollTimer = null;
 }
 window.addEventListener("hashchange", stopPolling);
+
+// Pratinjau gambar utama dan video yang ditemukan di artikel.
+function renderMediaPreview(result) {
+  const image = result.top_image;
+  const videos = Array.isArray(result.video_urls) ? result.video_urls : [];
+  if (!image && !videos.length) return "";
+  const videoItems = videos.map((url, i) => `
+      <li><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+        <span class="media-play" aria-hidden="true">▶</span>
+        <span>Video${videos.length > 1 ? ` ${i + 1}` : ""}<small>${escapeHtml(hostOf(url))}</small></span>
+      </a></li>`).join("");
+  return `
+    <div class="media-preview">
+      <span class="modality-title">Media di artikel</span>
+      ${image ? `<img class="media-thumb" src="${escapeHtml(image)}" alt="Gambar utama artikel" loading="lazy" referrerpolicy="no-referrer">` : ""}
+      ${videos.length ? `<ul class="media-videos">${videoItems}</ul>` : ""}
+    </div>`;
+}
 
 function articleInfo(result) {
   return `
@@ -160,7 +179,7 @@ function drawResult(root, result, poll = { started: Date.now(), tries: 0, errors
   const isHoaxResult = is_hoax ?? (/hoax|palsu/i.test(status) && !/bukan|tidak/i.test(status));
   const statusClass = isUncertain ? "uncertain" : isHoaxResult ? "hoax" : "valid";
   const score = Number(confidence_score) || 0;
-  const pct = Math.max(0, Math.min(100, score > 0 && score <= 1 ? score * 100 : score));
+  const pct = Math.round(Math.max(0, Math.min(100, score > 0 && score <= 1 ? score * 100 : score)));
   const references = result.references || result.sources || result.sources_used || result.fact_check_sources || [];
   const referenceItems = Array.isArray(references) ? references : [];
   const referenceMarkup = referenceItems.map((item) => {
@@ -172,21 +191,72 @@ function drawResult(root, result, poll = { started: Date.now(), tries: 0, errors
   }).join("");
 
   root.innerHTML = `
-    <section class="result-shell ${statusClass}" style="--pct:${pct};">
+    <section class="result-shell is-final ${statusClass}" style="--pct:${pct};">
       <span class="section-label">ringkasan pemeriksaan</span>
       ${articleInfo(result)}
       <div class="ring" role="img" aria-label="Skor keyakinan ${pct} persen">
         <div class="ring-inner"><b>${pct}%</b><small>keyakinan</small></div>
       </div>
       <div class="result-tag">${escapeHtml(status)}</div>
+      ${renderMediaPreview(result)}
       ${renderModalitasBadges(result)}
       <p class="explanation">${escapeHtml(explanation || "Belum ada penjelasan tambahan dari sistem.")}</p>
       <p class="result-limit" role="note"><strong>Gunakan sebagai petunjuk awal.</strong> Skor dan label otomatis bukan kepastian bahwa berita benar atau hoaks. Baca rujukan jika tersedia dan bandingkan dengan sumber tepercaya lain.</p>
       ${referenceMarkup ? `<div class="source-list"><h3>Rujukan terkait</h3>${referenceMarkup}</div>` : ""}
+      <div class="share-row">
+        <span class="share-label">Mau kirim hasil ini ke grup?</span>
+        <button type="button" class="button share-button" id="copy-summary">Salin ringkasan</button>
+        ${canNativeShare() ? '<button type="button" class="button share-button" id="share-summary">Bagikan</button>' : ""}
+        <span class="share-status" id="share-status" role="status" aria-live="polite"></span>
+        <textarea class="share-fallback" id="share-fallback" readonly rows="6" aria-label="Ringkasan hasil untuk disalin manual" hidden></textarea>
+      </div>
       <div class="result-actions">
         <a href="#/scan" class="button button-primary">Periksa link lain</a>
         <a href="#/history" class="button">Lihat riwayat</a>
       </div>
     </section>
   `;
+  // Gambar dari situs asal bisa gagal dimuat (diblokir/hilang): sembunyikan saja.
+  root.querySelector(".media-thumb")?.addEventListener("error", (e) => {
+    const box = e.target.closest(".media-preview");
+    e.target.remove();
+    if (box && !box.querySelector(".media-videos")) box.remove();
+  });
+  bindShare(root, buildSummary({ ...result, verdict: status }, pct));
+}
+
+function bindShare(root, summary) {
+  const statusEl = root.querySelector("#share-status");
+  const copyBtn = root.querySelector("#copy-summary");
+  let timer = null;
+  const flash = (text) => {
+    statusEl.textContent = text;
+    clearTimeout(timer);
+    timer = setTimeout(() => { statusEl.textContent = ""; }, 3000);
+  };
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await copyText(summary);
+      copyBtn.textContent = "Tersalin ✓";
+      setTimeout(() => { copyBtn.textContent = "Salin ringkasan"; }, 2000);
+      flash("Ringkasan tersalin. Tinggal tempel di chat.");
+    } catch {
+      // Tampilkan ringkasannya supaya bisa disalin sendiri.
+      const area = root.querySelector("#share-fallback");
+      area.value = summary;
+      area.hidden = false;
+      area.focus();
+      area.select();
+      flash("Browser tidak mengizinkan salin otomatis. Teksnya sudah terpilih di bawah, tinggal salin.");
+    }
+  });
+
+  root.querySelector("#share-summary")?.addEventListener("click", async () => {
+    try {
+      await navigator.share({ title: "Hasil cek HoaxScan", text: summary });
+    } catch (err) {
+      if (err?.name !== "AbortError") flash("Menu bagikan tidak bisa dibuka. Pakai Salin ringkasan saja.");
+    }
+  });
 }

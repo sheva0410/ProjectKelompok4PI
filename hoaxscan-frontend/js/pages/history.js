@@ -2,6 +2,7 @@ import { listSubmissions } from "../api.js";
 import { modalitasText } from "../modalitas.js";
 import { errorMarkup } from "../errors.js";
 import { renderSkeletonList } from "../progress.js";
+import { renderEmpty } from "../empty.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -120,7 +121,7 @@ async function loadHistory(root) {
   try {
     const items = await listSubmissions();
     if (!items.length) {
-      listEl.innerHTML = `<div class="card">Belum ada riwayat. <a href="#/scan"><strong>Periksa link pertama</strong></a></div>`;
+      listEl.innerHTML = renderEmpty({ icon: "riwayat", title: "Riwayatmu masih kosong", text: "Setiap link yang kamu periksa akan tersimpan di sini, lengkap dengan hasil dan alasannya. Mulai dari satu link dulu." });
       listEl.setAttribute("aria-busy", "false");
       return;
     }

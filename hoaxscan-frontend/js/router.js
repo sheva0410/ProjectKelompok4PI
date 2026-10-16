@@ -4,6 +4,7 @@
 
 const routes = {};
 let rootEl;
+let firstRender = true;
 
 export function registerRoute(path, renderFn) {
   routes[path] = renderFn;
@@ -25,6 +26,18 @@ function renderCurrentRoute() {
   } else {
     rootEl.innerHTML = "<p>Halaman tidak ditemukan.</p>";
   }
+
+  // Animasi masuk halaman (dimatikan CSS untuk "kurangi gerakan").
+  rootEl.classList.remove("page-enter");
+  void rootEl.offsetWidth;
+  rootEl.classList.add("page-enter");
+
+  // Setelah pindah halaman, fokus keyboard & pembaca layar pindah ke isi halaman.
+  if (!firstRender) {
+    window.scrollTo(0, 0);
+    rootEl.focus({ preventScroll: true });
+  }
+  firstRender = false;
 }
 
 export function navigate(path) {

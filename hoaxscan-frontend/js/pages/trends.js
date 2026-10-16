@@ -1,6 +1,7 @@
 import { listSubmissions } from "../api.js";
 import { errorMarkup } from "../errors.js";
 import { renderSkeletonList } from "../progress.js";
+import { renderEmpty } from "../empty.js";
 
 const escapeHtml = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -58,7 +59,7 @@ async function loadTrends(listEl) {
 
     const trends = [...grouped.values()].sort((a, b) => b.count - a.count || new Date(b.latest || 0) - new Date(a.latest || 0)).slice(0, 10);
     if (!trends.length) {
-      listEl.innerHTML = `<div class="card trend-empty"><h3>Belum ada tren untuk ditampilkan</h3><p>Setelah kamu memeriksa beberapa link, link yang berulang akan muncul di sini.</p><a class="button button-primary" href="#/scan">Periksa link</a></div>`;
+      listEl.innerHTML = renderEmpty({ icon: "tren", title: "Belum ada tren", text: "Link yang diperiksa lebih dari sekali akan muncul di sini, diurutkan dari yang paling sering dicek." });
       listEl.setAttribute("aria-busy", "false");
       return;
     }

@@ -1,3 +1,5 @@
+import { enableTilt } from "../tilt.js";
+
 export function renderHome(root) {
   root.innerHTML = `
     <div class="hm-page">
@@ -12,7 +14,7 @@ export function renderHome(root) {
           </div>
         </div>
 
-        <figure class="hm-sample" aria-label="Contoh tampilan hasil pemeriksaan">
+        <figure class="hm-sample" data-tilt="9" aria-label="Contoh tampilan hasil pemeriksaan">
           <span class="hm-sample-tag">contoh tampilan hasil</span>
           <div class="hm-ring" style="--pct:87"><b>87%</b></div>
           <span class="hm-verdict">Terindikasi hoax</span>
@@ -37,10 +39,10 @@ export function renderHome(root) {
           <h2 id="how-title">Dari link sampai hasil, empat langkah.</h2>
         </div>
         <ol class="hm-steps">
-          <li><span>1</span><h3>Tempel link</h3><p>Salin alamat lengkap artikelnya, lalu tempel di halaman Periksa link.</p></li>
-          <li><span>2</span><h3>Artikel dibaca</h3><p>HoaxScan mengambil judul dan isi artikel dari halaman tersebut.</p></li>
-          <li><span>3</span><h3>Dinilai</h3><p>Isinya dinilai, lalu keluar label dan skor keyakinan.</p></li>
-          <li><span>4</span><h3>Kamu yang memutuskan</h3><p>Baca alasannya, lalu bandingkan dengan sumber lain sebelum percaya.</p></li>
+          <li data-tilt="6"><span>1</span><h3>Tempel link</h3><p>Salin alamat lengkap artikelnya, lalu tempel di halaman Periksa link.</p></li>
+          <li data-tilt="6"><span>2</span><h3>Artikel dibaca</h3><p>HoaxScan mengambil judul dan isi artikel dari halaman tersebut.</p></li>
+          <li data-tilt="6"><span>3</span><h3>Dinilai</h3><p>Isinya dinilai, lalu keluar label dan skor keyakinan.</p></li>
+          <li data-tilt="6"><span>4</span><h3>Kamu yang memutuskan</h3><p>Baca alasannya, lalu bandingkan dengan sumber lain sebelum percaya.</p></li>
         </ol>
       </section>
 
@@ -50,19 +52,19 @@ export function renderHome(root) {
           <h2 id="result-title">Yang akan kamu lihat setelah memeriksa.</h2>
         </div>
         <div class="hm-cards">
-          <article class="hm-card hm-yellow">
+          <article data-tilt="6" class="hm-card hm-yellow">
             <h3>Label</h3>
             <p>Salah satu dari <em>terindikasi hoax</em>, <em>cenderung kredibel</em>, atau <em>tidak pasti</em>.</p>
           </article>
-          <article class="hm-card hm-mint">
+          <article data-tilt="6" class="hm-card hm-mint">
             <h3>Skor keyakinan</h3>
             <p>Seberapa yakin sistem dengan penilaiannya, dalam persen. Makin tinggi bukan berarti pasti benar.</p>
           </article>
-          <article class="hm-card hm-pink">
+          <article data-tilt="6" class="hm-card hm-pink">
             <h3>Alasan</h3>
             <p>Penjelasan singkat kenapa artikel dinilai begitu, plus rujukan kalau tersedia.</p>
           </article>
-          <article class="hm-card hm-blue">
+          <article data-tilt="6" class="hm-card hm-blue">
             <h3>Bagian yang dinilai</h3>
             <p>Lencana teks, gambar, dan video menunjukkan mana yang sudah ikut diperiksa dan mana yang belum.</p>
           </article>
@@ -92,4 +94,5 @@ export function renderHome(root) {
       </section>
     </div>
   `;
+  enableTilt(root);
 }

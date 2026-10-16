@@ -86,7 +86,10 @@ export function mockCreate(url) {
     normalized_url: value,
     title: "Contoh judul artikel dari mode demo",
     created_at: new Date().toISOString(),
-    media_found: ["gambar", "video"],
+    // Meniru media yang ditemukan scraper: semua contoh punya gambar,
+    // link berita video juga punya video.
+    top_image: new URL("assets/og-image.png", window.location.href).href,
+    video_urls: /video|20\.detik|antaranews\.com\/berita\/57901[4-9]/i.test(value) ? [value] : [],
     fail: value.toLowerCase().includes("gagal-analisis"),
     final: analyze(value),
   };

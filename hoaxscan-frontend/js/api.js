@@ -25,11 +25,22 @@ const WAITING = {
 // Batas waktu request. POST lebih lama karena backend membaca artikel dulu.
 const TIMEOUT_MS = { GET: 20000, POST: 45000 };
 
+function safeHttpUrl(value) {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Mengubah SubmissionOut dari backend menjadi bentuk yang dipakai halaman:
  * { id, url, title, media_type, state, status, is_hoax, verdict,
  *   confidence_score, explanation, error_hint, references,
- *   modalitas_dinilai, media_found, created_at, error_message }
+ *   modalitas_dinilai, media_found, top_image, video_urls, created_at, error_message }
+ * top_image & video_urls: media yang ditemukan scraper di artikel (opsional; dipakai
+ * untuk pratinjau media). Kalau backend belum mengirimnya, keduanya kosong.
  * state: "done" (ada hasil) | "pending" (pending/processing) | "failed"
  */
 export function toUiResult(sub) {
@@ -42,7 +53,16 @@ export function toUiResult(sub) {
     error_message: sub.error_message || null,
     created_at: sub.result?.created_at || sub.created_at,
   };
-  if (Array.isArray(sub.media_found)) base.media_found = sub.media_found;
+  const topImage = safeHttpUrl(sub.top_image);
+  const videoUrls = (Array.isArray(sub.video_urls) ? sub.video_urls : []).map(safeHttpUrl).filter(Boolean);
+  base.top_image = topImage;
+  base.video_urls = videoUrls;
+  if (Array.isArray(sub.media_found)) {
+    base.media_found = sub.media_found;
+  } else if ("top_image" in sub || "video_urls" in sub) {
+    // Media yang ada di artikel, untuk peringatan "belum ikut diperiksa".
+    base.media_found = [topImage && "gambar", videoUrls.length && "video"].filter(Boolean);
+  }
 
   if (sub.result) {
     const label = LABELS[sub.result.label] || LABELS.tidak_pasti;
