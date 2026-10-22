@@ -121,6 +121,92 @@ def test_error_selain_503_tidak_diulang(monkeypatch):
     assert gv.verifikasi("teks") is None
 
 
+# --- AI-04: video -----------------------------------------------------------
+
+YT = "https://www.youtube.com/embed/dQw4w9WgXcQ"
+
+
+def _video(monkeypatch, layak=True):
+    monkeypatch.setattr(gv.gemini_video, "video_layak", lambda url: layak)
+
+
+def test_youtube_dikirim_sebagai_link(monkeypatch):
+    Client = _palsu(monkeypatch, OK)
+    _video(monkeypatch)
+    h = gv.verifikasi("teks", video_url=YT)
+    part = Client.dikirim["contents"][0]
+    assert part.file_data.file_uri == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    assert "1 video dari halaman artikel" in Client.dikirim["contents"][-1]
+    assert h["modalitas_dinilai"] == ["teks", "video"]
+
+
+def test_youtube_ditolak_jatuh_ke_files_api(monkeypatch):
+    panggilan = []
+
+    class Client:
+        def __init__(self, **kw):
+            pass
+
+        class models:
+            @staticmethod
+            def generate_content(**kw):
+                panggilan.append(kw["contents"])
+                if len(panggilan) == 1:
+                    raise errors.ClientError(400, {"error": {"message": "link ditolak"}})
+                return SimpleNamespace(text=OK)
+
+    monkeypatch.setattr(gv.genai, "Client", Client)
+    monkeypatch.setattr(llm_check, "LLM_TERSEDIA", True)
+    _video(monkeypatch)
+    berkas = object()
+
+    class Upload:
+        def __init__(self, client, url):
+            pass
+
+        def __enter__(self):
+            return berkas
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(gv.gemini_video, "upload_video", Upload)
+    h = gv.verifikasi("teks", video_url=YT)
+    assert panggilan[1][0] is berkas
+    assert h["modalitas_dinilai"] == ["teks", "video"]
+
+
+def test_video_terlalu_panjang_dinilai_tanpa_video(monkeypatch):
+    Client = _palsu(monkeypatch, OK)
+    _video(monkeypatch, layak=False)
+    h = gv.verifikasi("teks", video_url=YT)
+    assert isinstance(Client.dikirim["contents"], str)
+    assert h["modalitas_dinilai"] == ["teks"]
+
+
+def test_upload_gagal_dinilai_tanpa_video(monkeypatch):
+    Client = _palsu(monkeypatch, OK)
+    _video(monkeypatch)
+
+    def gagal(client, url):
+        raise RuntimeError("download gagal")
+
+    monkeypatch.setattr(gv.gemini_video, "upload_video", gagal)
+    h = gv.verifikasi("teks", video_url="https://20.detik.com/embed/1")
+    assert isinstance(Client.dikirim["contents"], str)
+    assert h["modalitas_dinilai"] == ["teks"]
+
+
+def test_gambar_dan_video_bersama(monkeypatch):
+    Client = _palsu(monkeypatch, OK)
+    _video(monkeypatch)
+    monkeypatch.setattr(gv, "unduh_gambar", lambda url: GAMBAR)
+    h = gv.verifikasi("teks", gambar_url="https://contoh.id/a.jpg", video_url=YT)
+    contents = Client.dikirim["contents"]
+    assert contents[0] is GAMBAR and contents[1].file_data is not None
+    assert h["modalitas_dinilai"] == ["teks", "gambar", "video"]
+
+
 # --- unduh_gambar -----------------------------------------------------------
 
 class _Respon:

@@ -8,7 +8,7 @@ from google import genai
 from google.genai import errors, types
 
 from app.config import settings
-from app.services import llm_check
+from app.services import gemini_video, llm_check
 from app.services.scraper import HEADERS, TIMEOUT, ScrapeError, _check_url
 
 log = logging.getLogger(__name__)
@@ -48,13 +48,18 @@ memutuskan, jawab tidak_pasti dan jelaskan alasannya.
 Jawab hanya dengan JSON berikut, tanpa teks lain.
 {{"label": "hoax" atau "fakta" atau "tidak_pasti",
  "confidence": angka 0 sampai 1,
- "penjelasan": "2 sampai 4 kalimat Bahasa Indonesia yang menyebut klaim spesifik dan isi gambar bila ada",
+ "penjelasan": "2 sampai 4 kalimat Bahasa Indonesia yang menyebut klaim spesifik dan isi gambar atau video bila ada",
  "sumber_rujukan": [nomor rujukan yang benar-benar dipakai]}}"""
 
 MEDIA_GAMBAR = (
     "1 gambar utama artikel (dilampirkan). Nilai apakah peristiwa, tempat, dan waktu "
     "yang terlihat di gambar cocok dengan klaim artikel, dan sebutkan bila terlihat "
     "tanda suntingan. Sebut isi gambar secara spesifik di penjelasan."
+)
+MEDIA_VIDEO = (
+    "1 video dari halaman artikel (dilampirkan). Nilai apakah kejadian di video cocok "
+    "dengan klaim artikel, dan sebutkan bila video tampak dipotong dari konteksnya atau "
+    "hasil rekayasa. Sebut isi video secara spesifik di penjelasan."
 )
 
 
@@ -124,35 +129,67 @@ def _generate(client, contents):
             time.sleep(JEDA_503)
 
 
+def _nilai_dengan_video(client, kirim, video_url: str) -> str | None:
+    """Coba nilai artikel bersama video. Kembalikan teks balasan, atau None bila
+    video tidak bisa dipakai sehingga pemanggil menilai tanpa video."""
+    if not gemini_video.video_layak(video_url):
+        return None
+    yt = gemini_video.youtube_watch(video_url)
+    if yt:
+        # Jalur 1: link YouTube langsung, tanpa download
+        try:
+            return kirim(types.Part(file_data=types.FileData(file_uri=yt)))
+        except errors.ClientError as e:
+            log.warning("Link YouTube langsung ditolak (%s), coba lewat Files API", e.code)
+    # Jalur 2: download lalu upload ke Files API; file selalu dihapus setelahnya
+    try:
+        with gemini_video.upload_video(client, video_url) as berkas:
+            return kirim(berkas)
+    except Exception:
+        log.exception("Video %s gagal diproses, artikel dinilai tanpa video", video_url)
+        return None
+
+
 def verifikasi(teks: str, classifier: dict | None = None,
                rujukan: list[dict] | None = None,
-               gambar_url: str | None = None) -> dict | None:
-    """Nilai artikel lewat Gemini, dengan gambar utama bila ada.
+               gambar_url: str | None = None,
+               video_url: str | None = None) -> dict | None:
+    """Nilai artikel lewat Gemini, dengan gambar utama dan satu video bila ada.
 
     classifier: {"label": ..., "confidence": ...} dari IndoBERT, boleh None.
     rujukan: list dict berisi judul, ringkasan, link (keluaran AI-05), boleh None.
     gambar_url: Article.top_image, boleh None.
+    video_url: salah satu Article.video_urls, boleh None.
 
     Kembalikan {label, confidence, penjelasan, sumber_rujukan, modalitas_dinilai},
     atau None bila Gemini tidak tersedia, panggilan gagal, atau balasan tidak valid.
+    Gambar atau video yang gagal diproses dilewati; artikel tetap dinilai.
     """
     if not llm_check.LLM_TERSEDIA:
         return None
     rujukan = rujukan or []
     gambar = unduh_gambar(gambar_url) if gambar_url else None
-    prompt = PROMPT.format(
-        teks=teks[:MAX_TEKS],
-        classifier=_format_classifier(classifier),
-        media=MEDIA_GAMBAR if gambar else "Tidak ada.",
-        rujukan=_format_rujukan(rujukan),
-    )
-    contents = [gambar, prompt] if gambar else prompt
+
+    def kirim(video=None) -> str:
+        media = [m for m, ada in ((MEDIA_GAMBAR, gambar), (MEDIA_VIDEO, video)) if ada]
+        prompt = PROMPT.format(
+            teks=teks[:MAX_TEKS],
+            classifier=_format_classifier(classifier),
+            media="\n".join(media) or "Tidak ada.",
+            rujukan=_format_rujukan(rujukan),
+        )
+        contents = [p for p in (gambar, video) if p] + [prompt]
+        return _generate(client, contents if len(contents) > 1 else prompt).text or ""
+
     try:
         client = genai.Client(
             api_key=settings.gemini_api_key,
             http_options=types.HttpOptions(timeout=TIMEOUT_MS),
         )
-        raw = _generate(client, contents).text or ""
+        raw = _nilai_dengan_video(client, kirim, video_url) if video_url else None
+        ada_video = raw is not None
+        if raw is None:
+            raw = kirim()
     except Exception:
         log.exception("Panggilan Gemini gagal")
         return None
@@ -178,5 +215,5 @@ def verifikasi(teks: str, classifier: dict | None = None,
         "confidence": confidence,
         "penjelasan": penjelasan,
         "sumber_rujukan": sumber,
-        "modalitas_dinilai": ["teks", "gambar"] if gambar else ["teks"],
+        "modalitas_dinilai": ["teks"] + (["gambar"] if gambar else []) + (["video"] if ada_video else []),
     }
