@@ -28,7 +28,7 @@ def analyzer_palsu(monkeypatch, fungsi):
 
 # --- alur normal -----------------------------------------------------------
 
-def test_respons_post_pending_lalu_get_done(client, scraper_berhasil):
+def test_respons_post_pending_lalu_get_done(client, scraper_berhasil, classifier_palsu):
     dibuat = kirim(client)
     assert dibuat["status"] == "pending"
     assert dibuat["result"] is None
@@ -36,15 +36,15 @@ def test_respons_post_pending_lalu_get_done(client, scraper_berhasil):
     sesudah = status_dan_hasil(client, dibuat["id"])
     assert sesudah["status"] == "done"
     assert sesudah["error_message"] is None
-    assert sesudah["result"]["label"] == "tidak_pasti"
+    assert sesudah["result"]["label"] == "hoax"
 
 
-def test_hasil_sementara_jujur_tidak_menilai_apa_pun(client, scraper_berhasil):
-    """Stub tidak menilai teks, gambar, maupun video, jadi daftarnya harus kosong."""
+def test_hasil_indobert_tersimpan_hanya_menilai_teks(client, scraper_berhasil, classifier_palsu):
+    """IndoBERT hanya menilai teks; gambar dan video belum dinilai."""
     hasil = status_dan_hasil(client, kirim(client)["id"])["result"]
-    assert hasil["confidence"] == 0.0
-    assert hasil["modalitas_dinilai"] == []
-    assert "belum terpasang" in hasil["explanation"]
+    assert hasil["confidence"] == 0.95
+    assert hasil["modalitas_dinilai"] == ["teks"]
+    assert "IndoBERT" in hasil["explanation"]
 
 
 def test_link_bervideo_diproses_dan_artikel_sampai_ke_analyzer(
