@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff" id="theme-color">
+  <script>
+    // Pasang tema tersimpan sebelum halaman tampil, supaya tidak berkedip.
+    try {
+      const t = localStorage.getItem("hoaxscan_theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <meta name="description" content="Periksa berita online dengan HoaxScan. Tempel link artikel untuk melihat analisis, skor keyakinan, dan rujukan.">
+  <title>HoaxScan - Periksa Berita</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <!-- Pratinjau saat link HoaxScan dibagikan (WhatsApp, Telegram, media sosial).
+       og:image harus alamat lengkap; sesuaikan kalau domainnya berubah. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="HoaxScan">
+  <meta property="og:locale" content="id_ID">
+  <meta property="og:title" content="HoaxScan - Cek dulu sebelum percaya">
+  <meta property="og:description" content="Tempel link artikel berita. Teks, gambar, dan video di dalamnya ikut dinilai, lengkap dengan alasannya.">
+  <meta property="og:image" content="https://hoaxscan.iet-polinela.my.id/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="HoaxScan: Curiga sama berita viral? Cek dulu.">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito+Sans:wght@400;500;600;700;800;900&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#app" id="skip-link">Lewati ke isi</a>
+  <nav class="navbar" aria-label="Navigasi utama">
+    <a href="#/" class="logo"><span class="logo-mark" aria-hidden="true">H</span>HoaxScan</a>
+    <div class="nav-links" id="nav-links">
+      <a href="#/">Home</a>
+      <a href="#/scan">Periksa link</a>
+      <a href="#/trends">Tren</a>
+      <a href="#/history">Riwayat</a>
+    </div>
+    <div class="nav-right">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Tema: otomatis. Klik untuk mengganti."><span aria-hidden="true">◐</span><span class="theme-text">Otomatis</span></button>
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-label="Buka menu" aria-controls="nav-links" aria-expanded="false">Menu</button>
+    </div>
+  </nav>
+  <main id="app" class="container" tabindex="-1"></main>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    document.getElementById("nav-toggle").addEventListener("click", () => {
+      const links = document.getElementById("nav-links");
+      const toggle = document.getElementById("nav-toggle");
+      const isOpen = links.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Tutup menu" : "Buka menu");
+    });
+  </script>
+</body>
+</html>
