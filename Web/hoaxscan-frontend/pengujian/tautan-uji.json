@@ -1,0 +1,276 @@
+{
+  "dibuat": "2026-10-16",
+  "tugas": "FE-09",
+  "tautan": [
+    {
+      "no": 1,
+      "kelompok": "Hanya teks",
+      "media": "OJK (siaran pers)",
+      "judul": "Siaran Pers: OJK Berkomitmen untuk Terus Melanjutkan dan Memperkuat Reformasi Pasar Modal Indonesia",
+      "url": "https://www.ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-Berkomitmen-untuk-Terus-Melanjutkan-dan-Memperkuat-Reformasi-Pasar-Modal-Indonesia.aspx",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": false,
+        "video": false,
+        "panjang_teks": 4546
+      },
+      "modalitas_seharusnya": "Teks",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 2,
+      "kelompok": "Hanya teks",
+      "media": "OJK (siaran pers)",
+      "judul": "Siaran Pers: Terbitkan POJK Rencana Bisnis Bank Umum, OJK Perkuat Kontribusi Perbankan dalam Pembangunan Nasional",
+      "url": "https://www.ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/POJK-17-Tahun-2026-Rencana-Bisnis-Bank-Umum.aspx",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": false,
+        "video": false,
+        "panjang_teks": 5532
+      },
+      "modalitas_seharusnya": "Teks",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 3,
+      "kelompok": "Hanya teks",
+      "media": "OJK (siaran pers)",
+      "judul": "Siaran Pers: OJK Cabut Izin Usaha PT Porto Ventura Kapital",
+      "url": "https://www.ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-Cabut-Izin-Usaha-PT-Porto-Ventura-Kapital.aspx",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": false,
+        "video": false,
+        "panjang_teks": 5780
+      },
+      "modalitas_seharusnya": "Teks",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 4,
+      "kelompok": "Teks + gambar",
+      "media": "ANTARA",
+      "judul": "Antisipasi dampak asap, Pemkot Medan terapkan PJJ hingga 21 Oktober",
+      "url": "https://www.antaranews.com/berita/5790773/antisipasi-dampak-asap-pemkot-medan-terapkan-pjj-hingga-21-oktober",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 2930
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 5,
+      "kelompok": "Teks + gambar",
+      "media": "CNN Indonesia",
+      "judul": "Penjelasan KPK soal OTT Klaten, Seret Kepala BPK di Jateng",
+      "url": "https://www.cnnindonesia.com/nasional/20261016124548-16-1416109/penjelasan-kpk-soal-ott-klaten-seret-kepala-bpk-di-jateng",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 12933
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": "Peristiwa sama dengan tautan 6 dan 8 (OTT Klaten)."
+    },
+    {
+      "no": 6,
+      "kelompok": "Teks + gambar",
+      "media": "detikcom",
+      "judul": "5 Fakta Terkini OTT Bupati Klaten: Barbuk Rp 1 M, Puluhan Orang Ditangkap",
+      "url": "https://news.detik.com/berita/d-8709387/5-fakta-terkini-ott-bupati-klaten-barbuk-rp-1-m-puluhan-orang-ditangkap",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 38412
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": "Peristiwa sama dengan tautan 5 dan 8 (OTT Klaten)."
+    },
+    {
+      "no": 7,
+      "kelompok": "Teks + gambar",
+      "media": "Kompas.com (Cek Fakta)",
+      "judul": "INFOGRAFIK: Muncul Hoaks Bola Es Raksasa Jatuh dari Langit, Video Itu Konten AI",
+      "url": "https://www.kompas.com/cekfakta/read/2026/10/15/155000082/infografik--muncul-hoaks-bola-es-raksasa-jatuh-dari-langit-video-itu",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 22613
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": "Isinya terutama gambar infografik."
+    },
+    {
+      "no": 8,
+      "kelompok": "Teks + video",
+      "media": "ANTARA",
+      "judul": "KPK amankan 20 orang termasuk bupati melalui OTT di Klaten",
+      "url": "https://www.antaranews.com/berita/5790153/kpk-amankan-20-orang-termasuk-bupati-melalui-ott-di-klaten",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": true,
+        "panjang_teks": 663
+      },
+      "modalitas_seharusnya": "Teks, Gambar, Video",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": "Peristiwa sama dengan tautan 5 dan 6 (OTT Klaten)."
+    },
+    {
+      "no": 9,
+      "kelompok": "Teks + video",
+      "media": "ANTARA",
+      "judul": "Danantara berkomitmen salurkan Rp1,7 T di kesehatan hingga pendidikan",
+      "url": "https://www.antaranews.com/berita/5790169/danantara-berkomitmen-salurkan-rp17-t-di-kesehatan-hingga-pendidikan",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": true,
+        "panjang_teks": 669
+      },
+      "modalitas_seharusnya": "Teks, Gambar, Video",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 10,
+      "kelompok": "Teks + video",
+      "media": "ANTARA",
+      "judul": "Hadapi tantangan cuaca, Para Panahan tetap bidik dua medali emas",
+      "url": "https://asiangames.antaranews.com/berita/5790209/hadapi-tantangan-cuaca-para-panahan-tetap-bidik-dua-medali-emas",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": true,
+        "panjang_teks": 646
+      },
+      "modalitas_seharusnya": "Teks, Gambar, Video",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": ""
+    },
+    {
+      "no": 11,
+      "kelompok": "Teks + video",
+      "media": "20detik",
+      "judul": "Video: Ledakan Dahsyat di Pasar Cimanggis Berasal dari Ruang Pematangan Buah",
+      "url": "https://20.detik.com/detikupdate/20261015-261015043/video-ledakan-dahsyat-di-pasar-cimanggis-berasal-dari-ruang-pematangan-buah",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": true,
+        "panjang_teks": 301
+      },
+      "modalitas_seharusnya": "Teks, Gambar, Video",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "fakta",
+      "catatan": "Kasus perbatasan: teks hanya sekitar 300 karakter."
+    },
+    {
+      "no": 12,
+      "kelompok": "Cek fakta / hoaks",
+      "media": "Kompas.com (Cek Fakta)",
+      "judul": "[HOAKS] Prabowo Tunjuk AHY Sebagai Wapres pada September 2026",
+      "url": "https://www.kompas.com/cekfakta/read/2026/10/16/092838282/hoaks-prabowo-tunjuk-ahy-sebagai-wapres-pada-september-2026",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 23103
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "perlu disepakati tim",
+      "catatan": ""
+    },
+    {
+      "no": 13,
+      "kelompok": "Cek fakta / hoaks",
+      "media": "Kompas.com (Cek Fakta)",
+      "judul": "[KLARIFIKASI] Video AI, Rocky Gerung Bungkam Ditanya Keinginannya agar Gibran Mundur",
+      "url": "https://www.kompas.com/cekfakta/read/2026/10/15/165600782/-klarifikasi-video-ai-rocky-gerung-bungkam-ditanya-keinginannya-agar",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 24225
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "perlu disepakati tim",
+      "catatan": "Membahas video buatan AI, tapi videonya tidak tertanam di halaman."
+    },
+    {
+      "no": 14,
+      "kelompok": "Cek fakta / hoaks",
+      "media": "TurnBackHoax (Mafindo)",
+      "judul": "[SALAH] Wapres Gibran Mengundurkan Diri",
+      "url": "https://turnbackhoax.id/articles/37210-salah-wapres-gibran-mengundurkan-diri",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 7937
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "perlu disepakati tim",
+      "catatan": ""
+    },
+    {
+      "no": 15,
+      "kelompok": "Cek fakta / hoaks",
+      "media": "TurnBackHoax (Mafindo)",
+      "judul": "[SALAH] Video Pertahanan Udara Arab Saudi Cegat Drone Houthi di Makkah September 2026",
+      "url": "https://turnbackhoax.id/articles/37209-salah-video-pertahanan-udara-arab-saudi-cegat-drone-houthi-di-makkah-september-2026",
+      "cek_awal": {
+        "tanggal": "2026-10-16",
+        "http": 200,
+        "gambar": true,
+        "video": false,
+        "panjang_teks": 9554
+      },
+      "modalitas_seharusnya": "Teks, Gambar",
+      "harapan_sekarang": "status done; label tidak_pasti 0% (modul AI masih stub)",
+      "harapan_setelah_ai": "perlu disepakati tim",
+      "catatan": "Membahas video, tapi videonya tidak tertanam di halaman."
+    }
+  ]
+}
