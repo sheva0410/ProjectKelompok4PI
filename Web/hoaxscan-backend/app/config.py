@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     stub_delay_seconds: int = 0
     model_dir: str = "models/indobert-hoax-v1"
+    # repo Hugging Face asal model; diunduh ke model_dir bila belum ada. Kosongkan untuk mematikan.
+    model_repo: str = "AgataGenX/indobert-hoax-v1"
 
 
 settings = Settings()

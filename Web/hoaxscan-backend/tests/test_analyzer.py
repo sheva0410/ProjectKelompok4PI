@@ -41,8 +41,43 @@ def test_teks_terlalu_pendek_tidak_menilai_apa_pun(classifier_palsu):
     assert out.modalitas_dinilai == []
 
 
-def test_model_belum_ada_jadi_analysis_error(monkeypatch, tmp_path):
-    monkeypatch.setattr(analyzer.settings, "model_dir", str(tmp_path / "tidak-ada"))
-    analyzer.get_classifier.cache_clear()
+@pytest.fixture
+def model_kosong(monkeypatch, tmp_path):
+    """Folder model belum ada; unduhan Hugging Face dipalsukan."""
+    folder = tmp_path / "model"
+    monkeypatch.setattr(analyzer.settings, "model_dir", str(folder))
+    monkeypatch.setattr(analyzer.settings, "model_repo", "contoh/model")
+    analyzer._muat_classifier.cache_clear()
+    yield folder
+    analyzer._muat_classifier.cache_clear()
+
+
+def test_model_belum_ada_dan_tanpa_repo_jadi_analysis_error(model_kosong, monkeypatch):
+    monkeypatch.setattr(analyzer.settings, "model_repo", "")
+    with pytest.raises(AnalysisError, match="belum tersedia"):
+        analyze(ARTIKEL)
+
+
+def test_model_belum_ada_diunduh_dari_hugging_face(model_kosong, monkeypatch):
+    diminta = []
+    monkeypatch.setattr("huggingface_hub.snapshot_download",
+                        lambda repo, local_dir: diminta.append((repo, local_dir)))
+    analyzer.siapkan_model()
+    assert diminta == [("contoh/model", str(model_kosong))]
+
+
+def test_model_sudah_ada_tidak_diunduh_lagi(model_kosong, monkeypatch):
+    model_kosong.mkdir()
+    (model_kosong / "model.safetensors").write_bytes(b"")
+    monkeypatch.setattr("huggingface_hub.snapshot_download",
+                        lambda *a, **k: pytest.fail("tidak boleh mengunduh"))
+    analyzer.siapkan_model()
+
+
+def test_unduhan_gagal_jadi_analysis_error(model_kosong, monkeypatch):
+    def gagal(*a, **k):
+        raise OSError("koneksi putus")
+
+    monkeypatch.setattr("huggingface_hub.snapshot_download", gagal)
     with pytest.raises(AnalysisError, match="belum tersedia"):
         analyze(ARTIKEL)

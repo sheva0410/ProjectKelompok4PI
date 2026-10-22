@@ -1,4 +1,5 @@
 import os
+import threading
 from dataclasses import dataclass, field
 from functools import lru_cache
 
@@ -24,15 +25,37 @@ class AnalysisOutput:
     modalitas_dinilai: list[str] = field(default_factory=list)
 
 
-@lru_cache(maxsize=1)
-def get_classifier():
-    """Muat model IndoBERT sekali saja, saat analisis pertama."""
-    if not os.path.isdir(settings.model_dir):
+_kunci_model = threading.Lock()
+
+
+def siapkan_model():
+    """Pastikan file model ada di model_dir. Bila belum, unduh dari Hugging Face (sekitar 500 MB)."""
+    if os.path.isfile(os.path.join(settings.model_dir, "model.safetensors")):
+        return
+    if not settings.model_repo:
         raise AnalysisError("Model AI belum tersedia di server")
+    try:
+        from huggingface_hub import snapshot_download
+
+        snapshot_download(settings.model_repo, local_dir=settings.model_dir)
+    except Exception as e:
+        raise AnalysisError("Model AI belum tersedia di server") from e
+
+
+@lru_cache(maxsize=1)
+def _muat_classifier():
+    siapkan_model()
     # diimpor di sini supaya torch hanya dimuat saat model benar-benar dipakai
     from app.services.hoax_classifier import HoaxClassifier
 
     return HoaxClassifier(settings.model_dir)
+
+
+def get_classifier():
+    """Muat model IndoBERT sekali saja, saat analisis pertama."""
+    # kunci supaya dua analisis yang datang bersamaan tidak mengunduh model dua kali
+    with _kunci_model:
+        return _muat_classifier()
 
 
 def analyze(article: Article) -> AnalysisOutput:
