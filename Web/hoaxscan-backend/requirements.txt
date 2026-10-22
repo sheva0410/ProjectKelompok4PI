@@ -1,4 +1,4 @@
-﻿alembic==1.20.0
+alembic==1.20.0
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1
@@ -10,6 +10,7 @@ click==8.5.0
 fastapi==0.141.1
 feedparser==6.0.14
 filelock==4.2.0
+google-genai==2.23.0
 h11==0.16.0
 httpcore==1.0.9
 httptools==0.8.0
@@ -45,7 +46,7 @@ typing_extensions==4.16.0
 urllib3==2.8.0
 uvicorn==0.54.0
 w3lib==2.5.0
-websockets==17.1
+websockets==16.1.1
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.14.1+cpu
 transformers==5.19.0

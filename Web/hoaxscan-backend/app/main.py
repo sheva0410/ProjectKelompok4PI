@@ -1,11 +1,21 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import health, submissions
 
 from app.config import settings
 from app.routers import health
+from app.services.llm_check import cek_gemini
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    cek_gemini()  # sekali saat startup, tidak pernah melempar error
+    yield
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

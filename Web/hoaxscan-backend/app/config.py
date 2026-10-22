@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     jwt_secret: str = ""
     gemini_api_key: str = ""
+    gemini_model: str = ""
     stub_delay_seconds: int = 0
     model_dir: str = "models/indobert-hoax-v1"
     # repo Hugging Face asal model; diunduh ke model_dir bila belum ada. Kosongkan untuk mematikan.
