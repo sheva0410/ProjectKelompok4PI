@@ -1,18 +1,21 @@
-"""Uji manual AI-02: scrape beberapa link berita, lalu nilai teksnya lewat Gemini.
+"""Uji manual AI-02 dan AI-03: scrape link berita, lalu nilai teks dan gambar
+utamanya lewat Gemini.
 
 Jalankan dari folder hoaxscan-backend:
     python -m scripts.test_gemini_text URL1 URL2 URL3 URL4 URL5
+Tambahkan --tanpa-gambar untuk menilai teksnya saja.
 """
 import logging
 import sys
 
 from app.services import llm_check
-from app.services.gemini_verifier import verifikasi_teks
+from app.services.gemini_verifier import verifikasi
 from app.services.scraper import ScrapeError, extract_article
 
 logging.basicConfig(level=logging.WARNING)
 
-urls = sys.argv[1:]
+pakai_gambar = "--tanpa-gambar" not in sys.argv
+urls = [a for a in sys.argv[1:] if not a.startswith("--")]
 if not urls:
     sys.exit(__doc__)
 
@@ -24,7 +27,8 @@ for i, url in enumerate(urls, 1):
     except ScrapeError as e:
         print(f"{i}. SCRAPE GAGAL {url}: {e}")
         continue
-    hasil = verifikasi_teks(artikel.text)
-    print(f"{i}. {artikel.title}\n   {hasil}")
+    gambar = artikel.top_image if pakai_gambar else None
+    hasil = verifikasi(artikel.text, gambar_url=gambar)
+    print(f"{i}. {artikel.title}\n   gambar: {gambar}\n   {hasil}")
     terurai += hasil is not None
 print(f"\n{terurai}/{len(urls)} balasan terurai")
