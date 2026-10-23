@@ -31,6 +31,8 @@ if not (make_url(TEST_DATABASE_URL).database or "").endswith("_test"):
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 # Tes tidak boleh ikut jeda stub dari .env milik development.
 os.environ["STUB_DELAY_SECONDS"] = "0"
+# Tes tidak boleh memakai kuota Gemini dari .env development.
+os.environ["GEMINI_API_KEY"] = ""
 
 
 @pytest.fixture(scope="session", autouse=True)

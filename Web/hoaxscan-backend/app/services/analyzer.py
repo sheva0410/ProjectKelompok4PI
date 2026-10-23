@@ -1,10 +1,15 @@
+import logging
 import os
 import threading
 from dataclasses import dataclass, field
 from functools import lru_cache
 
 from app.config import settings
+from app.services import llm_check, rag
+from app.services.gemini_verifier import verifikasi
 from app.services.scraper import Article
+
+log = logging.getLogger(__name__)
 
 VALID_LABELS = {"hoax", "fakta", "tidak_pasti"}
 VALID_MODALITAS = {"teks", "gambar", "video"}
@@ -58,38 +63,81 @@ def get_classifier():
         return _muat_classifier()
 
 
-def analyze(article: Article) -> AnalysisOutput:
-    """TITIK SAMBUNG MODUL AI.
+def _dari_classifier(label: str, confidence: float, catatan: str) -> AnalysisOutput:
+    return AnalysisOutput(
+        label=label,
+        confidence=confidence,
+        explanation=f"Model IndoBERT menilai teks artikel ini sebagai {label} "
+                    f"dengan keyakinan {confidence:.0%}.{catatan}",
+        modalitas_dinilai=["teks"],
+    )
 
-    Teks dinilai IndoBERT (hoax_classifier.py). Skor yang belum meyakinkan
-    nantinya diteruskan ke Gemini (RAG); selama bagian itu belum ada, hasilnya
-    "tidak_pasti". Gambar dan video belum dinilai.
+
+def analyze(article: Article) -> AnalysisOutput:
+    """TITIK SAMBUNG MODUL AI, dengan gerbang dua lapis (AI-06).
+
+    Lapis 1: halaman yang punya gambar atau video selalu diteruskan ke RAG dan
+    Gemini, berapa pun skor IndoBERT, karena IndoBERT hanya membaca teks.
+    Lapis 2: tanpa media, Gemini dipanggil hanya bila skor IndoBERT di bawah
+    ambang ML-06 (hasil["confident"] bernilai False).
     Kontraknya: kembalikan AnalysisOutput, atau lempar AnalysisError
     (pesan aman ditampilkan ke pengguna) bila gagal.
     """
     hasil = get_classifier().classify(article.text)
-    if hasil["label"] is None:
-        return AnalysisOutput("tidak_pasti", 0.0, "Teks artikel terlalu pendek untuk dinilai.")
-
-    p = hasil["prob_hoax"]
-    confidence = round(max(p, 1 - p), 4)  # keyakinan pada label yang dipilih
+    ada_media = bool(article.top_image or article.video_urls)
+    teks_dinilai = hasil["label"] is not None
+    confidence = round(max(hasil["prob_hoax"], 1 - hasil["prob_hoax"]), 4) if teks_dinilai else 0.0
     catatan = ""
     if hasil["status"] == "terpotong":
         catatan = " Artikel sangat panjang, jadi hanya bagian awalnya yang dinilai."
 
-    if hasil["confident"]:
-        return AnalysisOutput(
-            label=hasil["label"],
-            confidence=confidence,
-            explanation=f"Model IndoBERT menilai teks artikel ini sebagai {hasil['label']} "
-                        f"dengan keyakinan {confidence:.0%}.{catatan}",
-            modalitas_dinilai=["teks"],
+    if ada_media:
+        alasan = "ada media"
+    elif not teks_dinilai:
+        alasan = "teks terlalu pendek"
+    elif hasil["confident"]:
+        alasan = "selesai sendiri"
+    else:
+        alasan = "skor rendah"
+    lanjut = alasan in ("ada media", "skor rendah")
+    if lanjut and not llm_check.LLM_TERSEDIA:
+        alasan += ", Gemini tidak tersedia"
+        lanjut = False
+    log.info("Gerbang: %s (IndoBERT %s, prob_hoax %s, gambar %s, video %s)",
+             alasan, hasil["label"], hasil["prob_hoax"],
+             bool(article.top_image), len(article.video_urls))
+
+    llm = None
+    if lanjut:
+        llm = verifikasi(
+            "\n\n".join(filter(None, [article.title, article.text])),
+            classifier={"label": hasil["label"], "confidence": confidence} if teks_dinilai else None,
+            # Korpus RAG diindeks per judul, jadi judul artikel yang paling sebanding
+            rujukan=rag.retrieve(article.title or article.text),
+            gambar_url=article.top_image,
+            video_url=article.video_urls[0] if article.video_urls else None,
         )
 
-    # TODO tim AI: teruskan ke Gemini (RAG) untuk verifikasi
+    if llm:
+        # ponytail: hasil Gemini dipakai apa adanya; AI-07 menggantinya dengan aggregate()
+        return AnalysisOutput(
+            label=llm["label"],
+            confidence=round(llm["confidence"], 4),
+            explanation=llm["penjelasan"] + catatan,
+            sources=[{"title": r["judul"], "url": r["link"], "tanggal": r.get("tanggal")}
+                     for r in llm["sumber_rujukan"]],
+            modalitas_dinilai=llm["modalitas_dinilai"],
+        )
+    if not teks_dinilai:
+        return AnalysisOutput("tidak_pasti", 0.0, "Teks artikel terlalu pendek untuk dinilai.")
+    if hasil["confident"]:
+        if ada_media:
+            catatan += " Gambar dan video belum dinilai karena verifikasi lanjutan tidak tersedia."
+        return _dari_classifier(hasil["label"], confidence, catatan)
     return AnalysisOutput(
         label="tidak_pasti",
         confidence=confidence,
-        explanation="Skor model belum cukup meyakinkan, artikel perlu diverifikasi lebih lanjut." + catatan,
+        explanation="Skor model belum cukup meyakinkan dan verifikasi lanjutan tidak tersedia, "
+                    "jadi artikel perlu diperiksa sendiri." + catatan,
         modalitas_dinilai=["teks"],
     )
