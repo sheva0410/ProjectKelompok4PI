@@ -1,3 +1,4 @@
+﻿--extra-index-url https://download.pytorch.org/whl/cpu
 alembic==1.20.0
 annotated-doc==0.0.5
 annotated-types==0.8.0
@@ -47,7 +48,9 @@ urllib3==2.8.0
 uvicorn==0.54.0
 w3lib==2.5.0
 websockets==16.1.1
---extra-index-url https://download.pytorch.org/whl/cpu
+yt-dlp==2026.10.21
+numpy==2.5.4
+sentence-transformers==6.2.0
 torch==2.14.1+cpu
 transformers==5.19.0
 huggingface_hub==1.33.0

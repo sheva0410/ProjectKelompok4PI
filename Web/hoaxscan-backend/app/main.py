@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -7,6 +8,9 @@ from app.routers import health, submissions
 from app.config import settings
 from app.routers import health
 from app.services.llm_check import cek_gemini
+
+# Tanpa ini, log INFO dari app (misalnya keputusan gerbang di analyzer) tidak tampil
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 @asynccontextmanager
