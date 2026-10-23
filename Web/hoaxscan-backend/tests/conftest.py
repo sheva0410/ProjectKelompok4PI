@@ -119,3 +119,16 @@ def scraper_dengan_video(monkeypatch):
         )
 
     monkeypatch.setattr("app.routers.submissions.extract_article", palsu)
+
+
+@pytest.fixture
+def classifier_palsu(monkeypatch):
+    """Model IndoBERT palsu: tanpa memuat model. Ubah isi `hasil` untuk mengatur keluarannya."""
+    hasil = {"label": "hoax", "prob_hoax": 0.95, "confident": True, "status": "ok"}
+
+    class Palsu:
+        def classify(self, text):
+            return dict(hasil)
+
+    monkeypatch.setattr("app.services.analyzer.get_classifier", lambda: Palsu())
+    return hasil
