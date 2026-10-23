@@ -29,8 +29,11 @@ PROMPT = """Kamu adalah pemeriksa fakta untuk berita berbahasa Indonesia.
 Nilai apakah klaim utama pada ARTIKEL di bawah ini hoax, fakta, atau tidak_pasti.
 Dasarkan penilaianmu hanya pada RUJUKAN dan pada MEDIA yang dilampirkan. Jangan
 memakai ingatanmu sendiri untuk memutuskan benar atau salah, dan dilarang
-menyebut sumber yang tidak ada di daftar RUJUKAN. Bila bahan tidak cukup untuk
-memutuskan, jawab tidak_pasti dan jelaskan alasannya.
+menyebut sumber yang tidak ada di daftar RUJUKAN. RUJUKAN dicari berdasarkan
+kemiripan kata, jadi bisa membahas kejadian lain yang hanya mirip (tokoh,
+waktu, atau peristiwanya berbeda). Abaikan rujukan seperti itu dan jangan
+cantumkan nomornya. Bila bahan tidak cukup untuk memutuskan, jawab tidak_pasti
+dan jelaskan alasannya.
 
 [ARTIKEL]
 {teks}
@@ -74,7 +77,8 @@ def _format_rujukan(rujukan: list[dict]) -> str:
     if not rujukan:
         return "Tidak ada rujukan yang cukup mirip."
     return "\n".join(
-        f"{i}. {r['judul']} | {r['ringkasan']} | {r['link']}"
+        f"{i}. {r['judul']} | {r.get('tanggal', 'tanggal tidak diketahui')} | "
+        f"{r['ringkasan']} | {r['link']}"
         for i, r in enumerate(rujukan, 1)
     )
 
